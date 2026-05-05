@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type VitalsMode = "DAMAGE" | "HEALING";
 export type InsanityMode = "ADD" | "SUB";
+export type SustenanceMode = "ADD" | "SUB";
 export type DefenseData = {
   attackRoll: number;
   damage: number;
@@ -38,6 +39,18 @@ interface VitalsStore {
   defenseData: DefenseData;
   openDefenseModal: (data: NonNullable<DefenseData>) => void;
   closeDefenseModal: () => void;
+
+  isSustenanceOpen: boolean;
+  sustenanceMode: SustenanceMode | null;
+  sustenanceInputValue: string;
+  isSustenanceSystemInjection: boolean;
+  openSustenanceModal: (
+    mode: SustenanceMode,
+    initialValue?: string,
+    isSystem?: boolean,
+  ) => void;
+  setSustenanceInputValue: (val: string) => void;
+  closeSustenanceModal: () => void;
 }
 
 export const useVitalsStore = create<VitalsStore>((set) => ({
@@ -74,4 +87,19 @@ export const useVitalsStore = create<VitalsStore>((set) => ({
   defenseData: null,
   openDefenseModal: (data) => set({ isDefenseOpen: true, defenseData: data }),
   closeDefenseModal: () => set({ isDefenseOpen: false, defenseData: null }),
+
+  isSustenanceOpen: false,
+  sustenanceMode: null,
+  sustenanceInputValue: "",
+  isSustenanceSystemInjection: false,
+  openSustenanceModal: (mode, initialValue = "", isSystem = false) =>
+    set({
+      isSustenanceOpen: true,
+      sustenanceMode: mode,
+      sustenanceInputValue: initialValue,
+      isSustenanceSystemInjection: isSystem,
+    }),
+  setSustenanceInputValue: (val) => set({ sustenanceInputValue: val }),
+  closeSustenanceModal: () =>
+    set({ isSustenanceOpen: false, isSustenanceSystemInjection: false }),
 }));

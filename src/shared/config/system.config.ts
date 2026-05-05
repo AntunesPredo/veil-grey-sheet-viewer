@@ -23,6 +23,7 @@ export const VG_CONFIG = {
     collapseFailPenalty: 2,
     deathBaseDC: 13,
     deathFailPenalty: 2,
+    starvationHpDamagePerPoint: 12,
     characterCreation: {
       skillPointsGranted: 1,
       skillPointsToDistribute: 2,

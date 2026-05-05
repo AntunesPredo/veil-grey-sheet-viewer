@@ -11,6 +11,7 @@ import { RollResolverModal } from "../../features/stats/RollResolverModal";
 import { VitalsResolutionModal } from "../../features/vitals/VitalsResolutionModal";
 import { InsanityTransactionModal } from "../../features/vitals/InsanityTransactionModal";
 import { CombatDefenseModal } from "../../features/vitals/CombatDefenseModal";
+import { SustenanceTransactionModal } from "../../features/vitals/SustenanceTransactionModal";
 
 export function SystemHud() {
   const tabs = [
@@ -38,6 +39,7 @@ export function SystemHud() {
       <VitalsResolutionModal />
       <CombatDefenseModal />
       <InsanityTransactionModal />
+      <SustenanceTransactionModal />
       <Header />
       <div className="flex flex-1 overflow-hidden relative w-full border border-[var(--theme-accent)] ">
         <AttributeDrawer />

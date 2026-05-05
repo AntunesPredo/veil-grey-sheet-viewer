@@ -141,6 +141,14 @@ export function SystemInjectionModal({
               openInsanityModal("ADD", actionData.val.toString(), true);
             } else if (actionData.target === "INSANITY_DRAIN") {
               openInsanityModal("SUB", actionData.val.toString(), true);
+            } else if (actionData.target === "SUSTENANCE_ADD") {
+              useVitalsStore
+                .getState()
+                .openSustenanceModal("ADD", actionData.val.toString(), true);
+            } else if (actionData.target === "SUSTENANCE_DRAIN") {
+              useVitalsStore
+                .getState()
+                .openSustenanceModal("SUB", actionData.val.toString(), true);
             } else {
               processDirectAction(actionData);
               RetroToast.success(

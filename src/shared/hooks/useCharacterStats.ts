@@ -152,16 +152,16 @@ export function useCharacterStats() {
 
     // 2. MADNESS
     if (insanityState === "UNSTABLE") {
-      const desc = "[MENTE: INSTÁVEL]";
+      const desc = "[MENTE INSTÁVEL]";
       addSysEffect("instinct", -1, desc);
       addSysEffect("intelligence", -1, desc);
       addSysEffect("perception", -2, desc);
     } else if (insanityState === "INSANE") {
-      const descObj = "[MENTE: INSANO]";
+      const descObj = "[MENTE INSANA]";
       addSysEffect("instinct", -2, descObj);
       addSysEffect("intelligence", -2, descObj);
       addSysEffect("wisdom", -2, descObj);
-      const descGeral = "[PÂNICO GENERALIZADO]";
+      const descGeral = "[INDIVÍDUO DESFUNCIONAL]";
       addSysEffect("ATT_PHYSICAL", -2, descGeral);
       addSysEffect("SKILL_PHYSICAL", -2, descGeral);
       addSysEffect("ATT_MENTAL", -2, descGeral);
@@ -170,26 +170,19 @@ export function useCharacterStats() {
       addSysEffect("SKILL_SOCIAL", -2, descGeral);
     }
 
-    // 3. SUSTENANCE
-    // if (sustenanceState === "FULL") {
-    //   const desc = "[SISTEMA: BEM ALIMENTADO]";
-    //   addSysEffect("ATT_PHYSICAL", 1, desc);
-    //   addSysEffect("SKILL_PHYSICAL", 1, desc);
-    //   addSysEffect("ATT_MENTAL", 1, desc);
-    //   addSysEffect("SKILL_MENTAL", 1, desc);
-    // } else if (sustenanceState === "HUNGRY") {
-    //   const desc = "[SISTEMA: FAMINTO]";
-    //   addSysEffect("ATT_PHYSICAL", -1, desc);
-    //   addSysEffect("SKILL_PHYSICAL", -1, desc);
-    //   addSysEffect("ATT_MENTAL", -1, desc);
-    //   addSysEffect("SKILL_MENTAL", -1, desc);
-    // } else if (sustenanceState === "STARVING") {
-    //   const desc = "[SISTEMA: INANIÇÃO]";
-    //   addSysEffect("ATT_PHYSICAL", -2, desc);
-    //   addSysEffect("SKILL_PHYSICAL", -2, desc);
-    //   addSysEffect("ATT_MENTAL", -2, desc);
-    //   addSysEffect("SKILL_MENTAL", -2, desc);
-    // }
+    if (sustenanceState === "FULL") {
+      const desc = "[METABOLISMO PERFEITO]";
+      addSysEffect("ATT_PHYSICAL", 1, desc);
+      addSysEffect("ATT_MENTAL", 1, desc);
+    } else if (sustenanceState === "HUNGRY") {
+      const desc = "[DEFICIÊNCIA CALÓRICA]";
+      addSysEffect("ATT_PHYSICAL", -1, desc);
+      addSysEffect("ATT_MENTAL", -1, desc);
+    } else if (sustenanceState === "STARVING") {
+      const desc = "[INANIÇÃO]";
+      addSysEffect("ATT_PHYSICAL", -2, desc);
+      addSysEffect("ATT_MENTAL", -2, desc);
+    }
 
     // // 4. ENERGY
     // if (energy === "tired") {

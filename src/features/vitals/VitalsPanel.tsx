@@ -1,6 +1,7 @@
 import { DisadvantagesWidget } from "./DisadvantagesWidget";
 import { HealthWidget } from "./HealthWidget";
 import { MadnessGaugeWidget } from "./MadnessGaugeWidget";
+import { SustenanceWidget } from "./SustenanceWidget";
 import { SystemModifiersWidget } from "./SystemModifiersWidget";
 
 function WidgetBlade({
@@ -57,13 +58,11 @@ export function VitalsPanel() {
           <>
             <HealthWidget />
 
-            {/* Divisória Mecânica para Fome/Energia */}
             <div className="border-t-2 border-dashed border-[var(--theme-border)] pt-5 grid grid-cols-2 gap-4 flex-1">
               <div className="flex flex-col justify-center relative">
                 <span className="absolute -top-3 left-2 bg-black px-2 text-[8px] font-mono text-[var(--theme-border)] tracking-widest">
                   SLOT: NUTRITION
                 </span>
-                {/* <SustenanceWidget /> */}
                 <div className="h-16 border border-[var(--theme-border)] opacity-20 flex items-center justify-center font-mono text-xs">
                   Aguardando Módulo...
                 </div>
@@ -72,7 +71,6 @@ export function VitalsPanel() {
                 <span className="absolute -top-3 left-6 bg-black px-2 text-[8px] font-mono text-[var(--theme-border)] tracking-widest">
                   SLOT: ENERGY
                 </span>
-                {/* <EnergyWidget /> */}
                 <div className="h-16 border border-[var(--theme-border)] opacity-20 flex items-center justify-center font-mono text-xs">
                   Aguardando Módulo...
                 </div>
@@ -84,13 +82,16 @@ export function VitalsPanel() {
           <MadnessGaugeWidget />
         </WidgetBlade>
       </div>
+      <WidgetBlade title="NUTRIÇÃO" number="3">
+        <SustenanceWidget />
+      </WidgetBlade>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <WidgetBlade title="ANOMALIAS REGISTRADAS" number="3" isDanger>
+        <WidgetBlade title="ANOMALIAS REGISTRADAS" number="4" isDanger>
           <DisadvantagesWidget />
         </WidgetBlade>
         <WidgetBlade
           title="Sistema de modificadores"
-          number="4"
+          number="5"
           classContainer="p-5"
         >
           <SystemModifiersWidget />

@@ -6,16 +6,16 @@ import { useVitalsStore } from "./useVitalsStore";
 import type { EquipableItem } from "../../shared/types/veil-grey";
 import { Button } from "../../shared/ui/Form";
 
+type SliceType = "hp" | "temp" | "empty";
+
 function HexCell({
-  activePoints,
-  color,
-  isTemp,
+  slices,
+  hpColor,
 }: {
-  activePoints: number;
-  color: string;
-  isTemp?: boolean;
+  slices: SliceType[];
+  hpColor: string;
 }) {
-  const slices = [
+  const slicePaths = [
     "M50 50 L50 0 L6.7 25 Z", // Slice 1 (11h)
     "M50 50 L6.7 25 L6.7 75 Z", // Slice 2 (10h)
     "M50 50 L6.7 75 L50 100 Z", // Slice 3 (7h)
@@ -24,39 +24,51 @@ function HexCell({
     "M50 50 L93.3 25 L50 0 Z", // Slice 6 (1h)
   ];
 
+  const hasAnyPoints = slices.some((s) => s !== "empty");
+  const hasTemp = slices.some((s) => s === "temp");
+  const outlineColor = hasTemp ? "var(--theme-success)" : hpColor;
+
   return (
-    <svg viewBox="0 0 100 100" className="w-10 h-10">
+    <svg viewBox="0 0 100 100" className="w-10 h-10 drop-shadow-md">
       <polygon
         points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25"
         fill="none"
         stroke="var(--theme-border)"
         strokeWidth="3"
-        opacity={activePoints > 0 ? 0.8 : 0.3}
+        opacity={hasAnyPoints ? 0.8 : 0.3}
       />
 
-      {slices.map((d, i) => (
-        <path
-          key={i}
-          d={d}
-          fill={i < activePoints ? color : "transparent"}
-          stroke={activePoints > 0 ? "white" : "transparent"}
-          strokeWidth="1"
-          opacity={i < activePoints ? 1 : 0.05}
-          className={
-            i < activePoints && isTemp
-              ? "animate-pulse"
-              : "transition-colors duration-300"
-          }
-        />
-      ))}
+      {slices.map((type, i) => {
+        const fillColor =
+          type === "hp"
+            ? hpColor
+            : type === "temp"
+              ? "var(--theme-success)"
+              : "transparent";
+        return (
+          <path
+            key={i}
+            d={slicePaths[i]}
+            fill={fillColor}
+            stroke={type !== "empty" ? "white" : "transparent"}
+            strokeWidth="1"
+            opacity={type !== "empty" ? 1 : 0.05}
+            className={
+              type === "temp"
+                ? "animate-pulse"
+                : "transition-colors duration-300"
+            }
+          />
+        );
+      })}
 
-      {activePoints > 0 && (
+      {hasAnyPoints && (
         <polygon
           points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25"
           fill="none"
-          stroke={color}
+          stroke={outlineColor}
           strokeWidth="4"
-          className={isTemp ? "animate-pulse opacity-100" : "opacity-40"}
+          className={hasTemp ? "animate-pulse opacity-100" : "opacity-40"}
           filter="blur(1px)"
         />
       )}
@@ -179,8 +191,8 @@ export function HealthWidget() {
       ? "var(--theme-warning)"
       : "var(--theme-accent)";
 
-  const totalHexes = Math.ceil(maxHp / 6);
-  const tempHexes = Math.ceil(hp.temp / 6);
+  const totalPoints = Math.max(maxHp, hp.current + hp.temp);
+  const hexesNeeded = Math.ceil(totalPoints / 6);
 
   const [columns, setColumns] = useState(6);
   const chassisRef = useRef<HTMLDivElement>(null);
@@ -191,9 +203,7 @@ export function HealthWidget() {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const availableWidth = entry.contentRect.width - 32;
-
         const calculatedCols = Math.max(1, Math.floor(availableWidth / 44));
-
         setColumns(calculatedCols);
       }
     });
@@ -202,7 +212,7 @@ export function HealthWidget() {
     return () => observer.disconnect();
   }, []);
 
-  const rows = Math.ceil((totalHexes + tempHexes) / columns);
+  const rows = Math.ceil(hexesNeeded / columns);
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -213,7 +223,7 @@ export function HealthWidget() {
               className="text-7xl font-black font-mono tracking-tighter leading-none"
               style={{
                 color: hp.temp ? "var(--theme-success)" : hpColor,
-                textShadow: `0 0 15px ${hpColor}40`,
+                textShadow: `0px 0px 6px ${hp.temp ? "var(--theme-success)" : hpColor}`,
               }}
             >
               {String(hp.current + hp.temp).padStart(2, "0")}
@@ -222,9 +232,9 @@ export function HealthWidget() {
               <span className="text-xl text-[var(--theme-accent)]/60 font-mono font-bold leading-none">
                 / {String(maxHp).padStart(2, "0")}
               </span>
-              {hp.temp ? (
-                <span className="text-xl text-[var(--theme-success)]/60 font-bold leading-none">
-                  + {hp.temp.toString().padStart(2, "0")}
+              {hp.temp > 0 ? (
+                <span className="text-xl text-[var(--theme-success)] font-bold leading-none animate-pulse">
+                  (+{hp.temp.toString().padStart(2, "0")})
                 </span>
               ) : null}
               <span className="text-[9px] font-mono tracking-widest text-[var(--theme-border)] mt-1">
@@ -234,7 +244,7 @@ export function HealthWidget() {
           </div>
         </div>
 
-        <div className="border-l-4 border-[var(--theme-border)] pl-3 mb-1">
+        <div className="border-l-4 border-[var(--theme-border)] pl-3 mb-1 w-1/3 md:w-auto">
           <div className="flex items-end gap-2">
             <span className="text-[9px] font-mono text-[var(--theme-accent)]/60 tracking-widest uppercase">
               ATUAL
@@ -242,7 +252,7 @@ export function HealthWidget() {
             <span
               className={`text-xl text-[${hpColor}] font-mono font-bold leading-none`}
             >
-              {`${Math.min((hp.current / maxHp) * 100, 100).toFixed(2)}%`}
+              {`${Math.min((hp.current / maxHp) * 100, 100).toFixed(1)}%`}
             </span>
           </div>
           <motion.div
@@ -253,7 +263,7 @@ export function HealthWidget() {
             }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           />
-          <div className="w-full h-1.5 bg-[var(--theme-background)] border border-[var(--theme-border)] relative overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)_inset]">
+          <div className="w-full h-1.5 bg-[var(--theme-background)] border border-[var(--theme-border)] relative overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)_inset] mt-1">
             <motion.div
               className="h-full"
               initial={{ width: 0 }}
@@ -283,20 +293,26 @@ export function HealthWidget() {
               gridTemplateRows: `repeat(${rows}, 36px)`,
             }}
           >
-            {Array.from({ length: totalHexes + tempHexes }).map((_, i) => {
-              const isTempHex = i >= totalHexes;
-              const pointsInHex = isTempHex
-                ? Math.max(0, Math.min(6, hp.temp - (i - totalHexes) * 6))
-                : Math.max(0, Math.min(6, hp.current - i * 6));
+            {Array.from({ length: hexesNeeded }).map((_, hexIndex) => {
+              const slices: SliceType[] = Array.from({ length: 6 }).map(
+                (_, sliceIndex) => {
+                  const globalPointIndex = hexIndex * 6 + sliceIndex;
+                  if (globalPointIndex < hp.current) return "hp";
+                  if (
+                    globalPointIndex >= hp.current &&
+                    globalPointIndex < hp.current + hp.temp
+                  )
+                    return "temp";
+                  return "empty";
+                },
+              );
 
-              const hexColor = isTempHex ? "var(--theme-success)" : hpColor;
-
-              const currentRow = Math.floor(i / columns);
+              const currentRow = Math.floor(hexIndex / columns);
               const isOddRow = currentRow % 2 !== 0;
 
               return (
                 <div
-                  key={`hex-${i}`}
+                  key={`hex-${hexIndex}`}
                   className="w-10 h-10"
                   style={{
                     gridColumn: `span 1`,
@@ -304,11 +320,7 @@ export function HealthWidget() {
                     marginTop: "-1px",
                   }}
                 >
-                  <HexCell
-                    activePoints={pointsInHex}
-                    color={hexColor}
-                    isTemp={isTempHex}
-                  />
+                  <HexCell slices={slices} hpColor={hpColor} />
                 </div>
               );
             })}
