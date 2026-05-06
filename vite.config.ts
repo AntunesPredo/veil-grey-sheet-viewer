@@ -17,7 +17,9 @@ export default defineConfig({
         description: "Interface Utilitária para o RPG Veil Grey.",
         theme_color: "#000000",
         background_color: "#000000",
-        display: "fullscreen",
+        display: "standalone",
+        start_url: "/veil-grey-hud/",
+        scope: "/veil-grey-hud/",
         icons: [
           {
             src: "pwa-192x192.png",
@@ -31,6 +33,10 @@ export default defineConfig({
             purpose: "any maskable",
           },
         ],
+        handle_links: "preferred",
+        launch_handler: {
+          client_mode: ["focus-existing", "auto"],
+        },
       },
     }),
   ],

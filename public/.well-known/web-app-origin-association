@@ -1,0 +1,10 @@
+{
+  "web_apps": [
+    {
+      "manifest": "https://antunespredo.github.io/veil-grey-hud/manifest.webmanifest",
+      "details": {
+        "paths": ["/veil-grey-hud/*"]
+      }
+    }
+  ]
+}
