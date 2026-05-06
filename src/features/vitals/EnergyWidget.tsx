@@ -208,9 +208,9 @@ export function EnergyWidget() {
         </defs>
       </svg>
 
-      <div className="flex flex-col gap-3 flex-1">
-        <div className="flex flex-col border-b-2 border-[var(--theme-accent)] pb-2 relative">
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[var(--theme-accent)]" />
+      <div className="p-2 flex flex-col gap-3 flex-1">
+        <div className=" flex flex-col border-b-2 border-[var(--theme-accent)] pb-2 relative">
+          <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-[var(--theme-accent)]" />
           <span className="text-[12px] text-[var(--theme-text)] tracking-[0.3em] font-bold uppercase mb-1">
             ESTADO ENERGÉTICO
           </span>
@@ -221,7 +221,7 @@ export function EnergyWidget() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0 mt-2">
+        <div className="px-2 grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0 mt-2">
           {telemetryData.map((e) => (
             <div
               key={`telemetry-${e.title}`}
@@ -229,7 +229,8 @@ export function EnergyWidget() {
             >
               <div className="flex justify-between items-center">
                 <span
-                  className={`text-[14px] font-bold text-[${e.color}] tracking-widest uppercase`}
+                  className="text-[14px] font-bold tracking-widest uppercase"
+                  style={{ color: e.color }}
                 >
                   {e.title}
                 </span>
@@ -242,7 +243,7 @@ export function EnergyWidget() {
           ))}
         </div>
 
-        <div className="relative p-4 md:p-6 border-2 border-[var(--theme-border)] bg-[#050505] shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] flex flex-col min-h-[80px]">
+        <div className="relative mx-2 p-4 md:p-6 border-2 border-[var(--theme-border)] bg-[#050505] shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] flex flex-col min-h-[80px]">
           <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[var(--theme-accent)]" />
           <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[var(--theme-accent)]" />
           <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[var(--theme-accent)]" />
@@ -341,7 +342,7 @@ export function EnergyWidget() {
           </div>
         </div>
         {energyCap < maxEnergy && (
-          <div className="border border-[var(--theme-warning)]/50 bg-[var(--theme-warning)]/10 p-3 flex items-start gap-3 shadow-[0_0_15px_rgba(204,122,0,0.1)]">
+          <div className="mx-2 border border-[var(--theme-warning)]/50 bg-[var(--theme-warning)]/10 p-3 flex items-start gap-3 shadow-[0_0_15px_rgba(204,122,0,0.1)]">
             <span className="text-xl leading-none text-[var(--theme-warning)] animate-pulse">
               ⚠
             </span>
@@ -358,7 +359,7 @@ export function EnergyWidget() {
           </div>
         )}
         <div
-          className={`border-2 border-[var(--theme-border)] p-3 border-l-4 ${currentConf.border} ${currentConf.bg} relative overflow-hidden`}
+          className={`mx-2 border-2 border-[var(--theme-border)] p-3 border-l-4 ${currentConf.border} ${currentConf.bg} relative overflow-hidden`}
         >
           <div
             className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -373,7 +374,7 @@ export function EnergyWidget() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_1.3fr_1fr] gap-3 md:gap-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] mt-2">
+      <div className="mx-4 pb-5 grid grid-cols-[1fr_1.3fr_1fr] gap-3 md:gap-4 mt-2">
         <button
           onClick={openFullRest}
           className="group flex flex-col items-center justify-center p-3 border-2 border-[var(--theme-success)] bg-[var(--theme-background)] text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-black shadow-[0_4px_0_var(--theme-success)] active:shadow-[0_0px_0_var(--theme-success)] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:pointer-events-none outline-none"

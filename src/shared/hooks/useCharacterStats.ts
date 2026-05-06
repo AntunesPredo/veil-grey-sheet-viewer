@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useCharacterStore } from "../../features/character/store";
 import { VG_CONFIG } from "../config/system.config";
 import { buildInsanityStages, buildSustenanceStages } from "../utils/mathUtils";
+import { calculateInventoryLoad } from "../utils/inventoryUtils";
 import type {
   SustenanceState,
   InsanityState,
@@ -76,47 +77,12 @@ export function useCharacterStats() {
 
     const maxInsanity = rules.baseInsanity + secondaryAttributes.mental_health;
     const maxSustenance = rules.baseSustenance + secondaryAttributes.mass;
-    const maxLoad = rules.baseLoad + secondaryAttributes.mass;
 
-    const currentLoad = inventory.reduce((total, item) => {
-      if (!item.isCarried || item.parentId !== null) return total;
-      const itemTotalSlots = item.slots * item.quantity;
-      const hasProps =
-        (item.type === "CONTAINER" || item.type === "EQUIPABLE") &&
-        item.containerProps;
-
-      if (hasProps && item.containerProps) {
-        const props = item.containerProps;
-        const inside = inventory
-          .filter((i) => i.parentId === item.id && i.isCarried)
-          .reduce((s, i) => s + i.slots * i.quantity, 0);
-
-        let activeRed = 0;
-        if (item.type === "CONTAINER") {
-          activeRed = Math.min(props.slotReduction, inside);
-        } else if (item.type === "EQUIPABLE") {
-          activeRed = item.isEquipped
-            ? Math.min(props.slotReduction, inside)
-            : 0;
-        }
-        return total + itemTotalSlots + (inside - activeRed);
-      }
-
-      if (item.type === "RECHARGEABLE") {
-        const reductionPerUnit = item.perItemSlotReduction || 0;
-        const inside = inventory
-          .filter((i) => i.parentId === item.id && i.isCarried)
-          .reduce((s, i) => {
-            const reducedSlotPerUnit = Math.max(0, i.slots - reductionPerUnit);
-            return s + reducedSlotPerUnit * i.quantity;
-          }, 0);
-        return total + itemTotalSlots + inside;
-      }
-
-      return total + itemTotalSlots;
-    }, 0);
-
-    const isOverweight = currentLoad > maxLoad;
+    const { currentLoad, maxLoad, isOverweight } = calculateInventoryLoad(
+      inventory,
+      attributes.strength,
+      attributes.constitution,
+    );
 
     const actualHp = Math.min(safeHpCurrent, maxHp);
     const hpPorc = maxHp === 0 ? 0 : (actualHp / maxHp) * 100;

@@ -66,7 +66,7 @@ export function VitalsPanel() {
         <WidgetBlade title="NUTRIÇÃO" number="3">
           <SustenanceWidget />
         </WidgetBlade>
-        <WidgetBlade title="ENERGIA" number="4" classContainer="p-5">
+        <WidgetBlade title="ENERGIA" number="4">
           <EnergyWidget />
         </WidgetBlade>
       </div>

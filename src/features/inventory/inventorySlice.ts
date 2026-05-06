@@ -249,7 +249,17 @@ export const createInventorySlice: StateCreator<
 
       let depth = 1;
       let curr = container;
+      const visitedIds = new Set<number>();
+
       while (curr.parentId !== null) {
+        if (visitedIds.has(curr.id)) {
+          return {
+            success: false,
+            message: "FALHA CRÍTICA: REFERÊNCIA CIRCULAR DETECTADA.",
+          };
+        }
+        visitedIds.add(curr.id);
+
         depth++;
         const parent = state.inventory.find((i) => i.id === curr.parentId);
         if (!parent) break;

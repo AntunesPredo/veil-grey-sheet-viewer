@@ -333,8 +333,8 @@ export function SustenanceWidget() {
       <div className="flex flex-col font-mono w-full h-full relative bg-[var(--theme-background)]">
         <div className="flex flex-col md:flex-row justify-between items-start bg-[#050505] border-b-2 border-[var(--theme-border)] p-2 z-20 shrink-0 shadow-sm gap-2">
           <div className="flex flex-col text-center md:text-left w-full md:w-auto">
-            <span className="text-[10px] md:text-[11px] text-[var(--theme-text)] tracking-widest uppercase font-bold">
-              MNLT.GASTRO // RESERVAS NUTRICIONAIS
+            <span className="text-[12px] text-[var(--theme-text)] tracking-[0.3em] font-bold uppercase">
+              RESERVAS NUTRICIONAIS
             </span>
           </div>
           <div className="flex items-baseline justify-center w-full md:w-auto">

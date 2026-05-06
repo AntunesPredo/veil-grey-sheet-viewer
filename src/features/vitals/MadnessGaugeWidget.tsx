@@ -155,7 +155,7 @@ export function MadnessGaugeWidget() {
                 {icon ? (
                   <g
                     transform={`translate(${coreX - 32}, ${coreY - 32}) scale(${64 / 512})`}
-                    className={`text-[${activeConf.strokeColor}]`}
+                    style={{ color: activeConf.strokeColor }}
                     stroke={activeConf.strokeColor}
                     strokeWidth={0}
                   >
@@ -394,7 +394,7 @@ export function MadnessGaugeWidget() {
           </div>
         </div>
         <div
-          className={`p-4 bg-[${insanityState === "INSANE" ? "var(--theme-danger)" : "var(--theme-accent)"}]/10`}
+          className={`p-4 ${insanityState === "INSANE" ? "bg-[var(--theme-danger)]/10" : "bg-[var(--theme-accent)]/10"}`}
           style={{ borderLeft: `4px solid ${activeConf.strokeColor}` }}
         >
           <div
