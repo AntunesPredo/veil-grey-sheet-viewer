@@ -216,35 +216,33 @@ export function HealthWidget() {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="flex justify-between items-end border-b-2 border-[var(--theme-border)] pb-2">
-        <div className="flex flex-col">
-          <div className="flex items-baseline gap-2">
-            <span
-              className="text-7xl font-black font-mono tracking-tighter leading-none"
-              style={{
-                color: hp.temp ? "var(--theme-success)" : hpColor,
-                textShadow: `0px 0px 6px ${hp.temp ? "var(--theme-success)" : hpColor}`,
-              }}
-            >
-              {String(hp.current + hp.temp).padStart(2, "0")}
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-end border-b-2 border-[var(--theme-border)] pb-2">
+        <div className="flex items-baseline self-center gap-2">
+          <span
+            className="text-7xl font-black font-mono tracking-tighter leading-none"
+            style={{
+              color: hp.temp ? "var(--theme-success)" : hpColor,
+              textShadow: `0px 0px 6px ${hp.temp ? "var(--theme-success)" : hpColor}`,
+            }}
+          >
+            {String(hp.current + hp.temp).padStart(2, "0")}
+          </span>
+          <div className="flex gap-2">
+            <span className="text-xl text-[var(--theme-accent)]/60 font-mono font-bold leading-none">
+              / {String(maxHp).padStart(2, "0")}
             </span>
-            <div className="flex gap-2">
-              <span className="text-xl text-[var(--theme-accent)]/60 font-mono font-bold leading-none">
-                / {String(maxHp).padStart(2, "0")}
+            {hp.temp > 0 ? (
+              <span className="text-xl text-[var(--theme-success)] font-bold leading-none animate-pulse">
+                (+{hp.temp.toString().padStart(2, "0")})
               </span>
-              {hp.temp > 0 ? (
-                <span className="text-xl text-[var(--theme-success)] font-bold leading-none animate-pulse">
-                  (+{hp.temp.toString().padStart(2, "0")})
-                </span>
-              ) : null}
-              <span className="text-[9px] font-mono tracking-widest text-[var(--theme-border)] mt-1">
-                MAX_CAPACITY
-              </span>
-            </div>
+            ) : null}
+            <span className="text-[9px] hidden md:flex font-mono tracking-widest text-[var(--theme-border)] mt-1">
+              MAX_CAPACITY
+            </span>
           </div>
         </div>
 
-        <div className="border-l-4 border-[var(--theme-border)] pl-3 mb-1 w-1/3 md:w-auto">
+        <div className="border-l-4 border-[var(--theme-border)] pl-3 mb-1 w-full md:w-auto">
           <div className="flex items-end gap-2">
             <span className="text-[9px] font-mono text-[var(--theme-accent)]/60 tracking-widest uppercase">
               ATUAL
@@ -255,15 +253,8 @@ export function HealthWidget() {
               {`${Math.min((hp.current / maxHp) * 100, 100).toFixed(1)}%`}
             </span>
           </div>
-          <motion.div
-            className="h-full h-4 bg-[var(--theme-accent)] shadow-[0_0_8px_var(--theme-accent)]"
-            initial={{ width: 0 }}
-            animate={{
-              width: `${Math.min((hp.current / maxHp) * 100, 100)}%`,
-            }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          />
-          <div className="w-full h-1.5 bg-[var(--theme-background)] border border-[var(--theme-border)] relative overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)_inset] mt-1">
+
+          <div className="w-full h-6 md:h-1.5 bg-[var(--theme-background)] border border-[var(--theme-border)] relative overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)_inset] mt-1">
             <motion.div
               className="h-full"
               initial={{ width: 0 }}

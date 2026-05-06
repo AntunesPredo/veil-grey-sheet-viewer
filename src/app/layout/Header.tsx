@@ -123,11 +123,13 @@ export function Header() {
 
             <div className="flex flex-col items-center w-full md:w-auto flex-1 max-w-md px-2">
               <div className="flex justify-between items-end w-full text-[11px] font-bold text-[var(--theme-accent)] mb-1.5">
-                <span className="pl-[2px] tracking-widest">NÍVEL {level}</span>
-                <span className="text-[var(--theme-text)]/40 text-[9px] tracking-widest">
-                  MAX: ATT {currentTier.maxAttr} | SKL {currentTier.maxSkill}
+                <span className="pl-[2px] flex-1 tracking-widest">
+                  NÍVEL {level}
                 </span>
-                <div className="flex items-center gap-1 tracking-widest">
+                <span className="text-[var(--theme-text)]/40 text-[9px] tracking-widest">
+                  ATT {currentTier.maxAttr} | SKL {currentTier.maxSkill}
+                </span>
+                <div className="flex flex-1 justify-end items-center gap-1 tracking-widest">
                   <span>
                     {xp.current} / {xp.max} XP
                   </span>

@@ -1,10 +1,8 @@
 import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
-import type {
-  EnergyLevel,
-  CrisisState,
-  InstantAction,
-} from "../../shared/types/veil-grey";
+import type { CrisisState, InstantAction } from "../../shared/types/veil-grey";
+import { VG_CONFIG } from "../../shared/config/system.config";
+import { buildSustenanceStages } from "../../shared/utils/mathUtils";
 
 export interface VitalsSlice {
   hp: {
@@ -18,7 +16,7 @@ export interface VitalsSlice {
   };
   sustenance: { current: number };
   insanity: { current: number; volatile: boolean };
-  energy: EnergyLevel;
+  energy: { current: number };
   evilness: number;
   crisis: { state: CrisisState; fails: number; ignore: boolean };
 
@@ -33,7 +31,8 @@ export interface VitalsSlice {
   addMaxHpBonus: (amount: number) => void;
   updateInsanity: (current: number) => void;
   updateSustenance: (current: number) => void;
-  updateEnergy: (energy: EnergyLevel) => void;
+  updateEnergy: (current: number) => void;
+  consumeEnergy: (amount: number) => void;
   updateEvilness: (val: number) => void;
   updateCrisis: (data: Partial<VitalsSlice["crisis"]>) => void;
   setManualInjury: (type: "isInjured" | "isVeryInjured", val: boolean) => void;
@@ -41,6 +40,106 @@ export interface VitalsSlice {
   toggleVolatilePsyche: () => void;
   processDirectAction: (action: InstantAction) => void;
 }
+
+const sanitizeNumber = (
+  val: string | number | undefined | null,
+  fallback: number,
+): number => {
+  const parsed = Number(val);
+  return isNaN(parsed) ? fallback : parsed;
+};
+
+const getSafeEnergyCurrent = (state: CharacterStore): number => {
+  let current = NaN;
+  if (
+    typeof state.energy === "object" &&
+    state.energy !== null &&
+    "current" in state.energy
+  ) {
+    current = Number(state.energy.current);
+  }
+
+  const agi = Math.floor(
+    ((state.attributes?.dexterity || 0) + (state.attributes?.instinct || 0)) /
+      2,
+  );
+  const ap = 1 + Math.floor(agi / 3);
+  const slots = 4 + ap;
+  const max = slots * 3;
+
+  if (!isNaN(current)) return current;
+
+  if (state.energy === ("exhausted" as unknown)) return slots;
+  if (state.energy === ("tired" as unknown)) return slots * 2;
+  return max;
+};
+
+const getEnergyCap = (
+  state: CharacterStore,
+  sustenanceValue: number,
+): number => {
+  const mass =
+    (state.attributes.strength || 0) + (state.attributes.constitution || 0);
+  const maxSustenance = VG_CONFIG.rules.baseSustenance + mass;
+  const sustStages = buildSustenanceStages(maxSustenance);
+
+  const agi = Math.floor(
+    ((state.attributes?.dexterity || 0) + (state.attributes?.instinct || 0)) /
+      2,
+  );
+  const ap = 1 + Math.floor(agi / 3);
+  const slotsPerStage = 4 + ap;
+
+  if (sustenanceValue <= sustStages[0] - 1) return slotsPerStage;
+  if (sustenanceValue <= sustStages[0] - 1 + sustStages[1])
+    return slotsPerStage * 2;
+  return slotsPerStage * 3;
+};
+
+const calculateOverweight = (state: CharacterStore) => {
+  const mass =
+    (state.attributes.strength || 0) + (state.attributes.constitution || 0);
+  const maxLoad = VG_CONFIG.rules.baseLoad + mass;
+
+  const currentLoad = state.inventory.reduce((total, item) => {
+    if (!item.isCarried || item.parentId !== null) return total;
+    const itemTotalSlots = item.slots * item.quantity;
+    const hasProps =
+      (item.type === "CONTAINER" || item.type === "EQUIPABLE") &&
+      item.containerProps;
+
+    if (hasProps && item.containerProps) {
+      const inside = state.inventory
+        .filter((i) => i.parentId === item.id && i.isCarried)
+        .reduce((s, i) => s + i.slots * i.quantity, 0);
+
+      let activeRed = 0;
+      if (item.type === "CONTAINER") {
+        activeRed = Math.min(item.containerProps.slotReduction, inside);
+      } else if (item.type === "EQUIPABLE") {
+        activeRed = item.isEquipped
+          ? Math.min(item.containerProps.slotReduction, inside)
+          : 0;
+      }
+      return total + itemTotalSlots + (inside - activeRed);
+    }
+
+    if (item.type === "RECHARGEABLE") {
+      const reductionPerUnit = item.perItemSlotReduction || 0;
+      const inside = state.inventory
+        .filter((i) => i.parentId === item.id && i.isCarried)
+        .reduce((s, i) => {
+          const reducedSlotPerUnit = Math.max(0, i.slots - reductionPerUnit);
+          return s + reducedSlotPerUnit * i.quantity;
+        }, 0);
+      return total + itemTotalSlots + inside;
+    }
+
+    return total + itemTotalSlots;
+  }, 0);
+
+  return currentLoad > maxLoad;
+};
 
 export const createVitalsSlice: StateCreator<
   CharacterStore,
@@ -59,7 +158,7 @@ export const createVitalsSlice: StateCreator<
   },
   sustenance: { current: 0 },
   insanity: { current: 0, volatile: false },
-  energy: "rested",
+  energy: { current: 15 },
   evilness: 0,
   crisis: { state: null, fails: 0, ignore: false },
 
@@ -69,7 +168,7 @@ export const createVitalsSlice: StateCreator<
         ...state.hp,
         current: Math.min(
           state.hp.baseMax + state.hp.maxBonus,
-          state.hp.current + amount,
+          sanitizeNumber(state.hp.current, 65) + sanitizeNumber(amount, 0),
         ),
       },
     })),
@@ -78,14 +177,15 @@ export const createVitalsSlice: StateCreator<
     set((state) => ({
       hp: {
         ...state.hp,
-        maxBonus: state.hp.maxBonus + amount,
-        current: state.hp.current + amount,
+        maxBonus: state.hp.maxBonus + sanitizeNumber(amount, 0),
+        current:
+          sanitizeNumber(state.hp.current, 65) + sanitizeNumber(amount, 0),
       },
     })),
 
   applyDamage: (amount, mitigateMode, armorId) => {
     const state = get();
-    let finalDamage = amount;
+    let finalDamage = sanitizeNumber(amount, 0);
 
     if (mitigateMode !== "IGNORE" && armorId) {
       const armor = state.inventory.find((i) => i.id === armorId);
@@ -105,10 +205,10 @@ export const createVitalsSlice: StateCreator<
 
     set((s) => {
       let remainingDamage = finalDamage;
-      let newTemp = s.hp.temp;
+      let newTemp = sanitizeNumber(s.hp.temp, 0);
       const maxHp = s.hp.baseMax + s.hp.maxBonus;
 
-      let newCurrent = Math.min(s.hp.current, maxHp);
+      let newCurrent = Math.min(sanitizeNumber(s.hp.current, 65), maxHp);
 
       if (newTemp > 0) {
         if (newTemp >= remainingDamage) {
@@ -133,13 +233,46 @@ export const createVitalsSlice: StateCreator<
   },
 
   updateHpTemp: (amount) =>
-    set((state) => ({ hp: { ...state.hp, temp: Math.max(0, amount) } })),
+    set((state) => ({
+      hp: { ...state.hp, temp: Math.max(0, sanitizeNumber(amount, 0)) },
+    })),
   updateInsanity: (current) =>
-    set((state) => ({ insanity: { ...state.insanity, current } })),
+    set((state) => ({
+      insanity: { ...state.insanity, current: sanitizeNumber(current, 0) },
+    })),
+
   updateSustenance: (current) =>
-    set((state) => ({ sustenance: { ...state.sustenance, current } })),
-  updateEnergy: (energy) => set({ energy }),
-  updateEvilness: (val) => set({ evilness: val }),
+    set((state) => {
+      const newSustenance = Math.max(0, sanitizeNumber(current, 0));
+      const cap = getEnergyCap(state, newSustenance);
+      return {
+        sustenance: { ...state.sustenance, current: newSustenance },
+        energy: { current: Math.min(getSafeEnergyCurrent(state), cap) },
+      };
+    }),
+
+  updateEnergy: (current) =>
+    set((state) => {
+      const cap = getEnergyCap(state, state.sustenance.current);
+      return {
+        energy: {
+          current: Math.min(cap, Math.max(0, sanitizeNumber(current, 0))),
+        },
+      };
+    }),
+
+  consumeEnergy: (amount) =>
+    set((state) => {
+      const cap = getEnergyCap(state, state.sustenance.current);
+      const actualEnergy = Math.min(getSafeEnergyCurrent(state), cap);
+      return {
+        energy: {
+          current: Math.max(0, actualEnergy - sanitizeNumber(amount, 0)),
+        },
+      };
+    }),
+
+  updateEvilness: (val) => set({ evilness: sanitizeNumber(val, 0) }),
   updateCrisis: (data) =>
     set((state) => ({ crisis: { ...state.crisis, ...data } })),
   setManualInjury: (type, val) =>
@@ -162,39 +295,131 @@ export const createVitalsSlice: StateCreator<
 
   processDirectAction: (act) => {
     set((state) => {
-      const updatedHp = { ...state.hp };
-      const updatedSustenance = { ...state.sustenance };
-      let updatedEnergy = state.energy;
-      let updatedEvilness = state.evilness;
+      const updatedHp = {
+        ...state.hp,
+        current: sanitizeNumber(state.hp.current, 65),
+        temp: sanitizeNumber(state.hp.temp, 0),
+      };
+      const updatedSustenance = {
+        ...state.sustenance,
+        current: sanitizeNumber(state.sustenance.current, 0),
+      };
+      let updatedEnergyVal = getSafeEnergyCurrent(state);
+      let updatedEvilness = sanitizeNumber(state.evilness, 0);
+
+      const safeActVal = sanitizeNumber(act.val, 0);
 
       if (act.target === "HP_HEAL")
         updatedHp.current = Math.min(
           updatedHp.baseMax + updatedHp.maxBonus,
-          updatedHp.current + act.val,
+          updatedHp.current + safeActVal,
         );
       if (act.target === "HP_DRAIN")
-        updatedHp.current = Math.max(0, updatedHp.current - act.val);
-      if (act.target === "HP_TEMP") updatedHp.temp += act.val;
-      if (act.target === "ENERGY_RESTORE") {
-        if (updatedEnergy === "exhausted") updatedEnergy = "tired";
-        else if (updatedEnergy === "tired") updatedEnergy = "rested";
+        updatedHp.current = Math.max(0, updatedHp.current - safeActVal);
+      if (act.target === "HP_TEMP") updatedHp.temp += safeActVal;
+
+      const agi = Math.floor(
+        ((state.attributes?.dexterity || 0) +
+          (state.attributes?.instinct || 0)) /
+          2,
+      );
+      const ap = 1 + Math.floor(agi / 3);
+      const slotsPerStage = 4 + ap;
+
+      const mass =
+        (state.attributes.strength || 0) + (state.attributes.constitution || 0);
+      const maxSustenance = VG_CONFIG.rules.baseSustenance + mass;
+
+      const energyCap = getEnergyCap(state, updatedSustenance.current);
+
+      if (act.target === "ENERGY_STAGE_RESTORE") {
+        updatedEnergyVal = Math.min(
+          energyCap,
+          updatedEnergyVal + slotsPerStage,
+        );
+      } else if (act.target === "ENERGY_STAGE_DRAIN") {
+        updatedEnergyVal = Math.max(0, updatedEnergyVal - slotsPerStage);
+      } else if (act.target === "ENERGY_USES_DRAIN") {
+        updatedEnergyVal = Math.max(0, updatedEnergyVal - safeActVal);
+      } else if (act.target === "ENERGY_USES_RESTORE") {
+        let remainingVal = safeActVal;
+
+        while (remainingVal > 0 && updatedEnergyVal < energyCap) {
+          if (
+            updatedEnergyVal === slotsPerStage ||
+            updatedEnergyVal === slotsPerStage * 2
+          ) {
+            remainingVal = Math.floor(remainingVal / 2);
+            if (remainingVal <= 0) break;
+          }
+
+          let nextBoundary = energyCap;
+          if (updatedEnergyVal < slotsPerStage) {
+            nextBoundary = slotsPerStage;
+          } else if (updatedEnergyVal < slotsPerStage * 2) {
+            nextBoundary = slotsPerStage * 2;
+          }
+
+          const spaceInStage = nextBoundary - updatedEnergyVal;
+          const pointsToTake = Math.min(spaceInStage, remainingVal);
+
+          updatedEnergyVal += pointsToTake;
+          remainingVal -= pointsToTake;
+        }
       }
-      if (act.target === "ENERGY_DRAIN") {
-        if (updatedEnergy === "rested") updatedEnergy = "tired";
-        else if (updatedEnergy === "tired") updatedEnergy = "exhausted";
+
+      if (
+        act.target === "SUSTENANCE_ADD" ||
+        act.target === "SUSTENANCE_DRAIN"
+      ) {
+        const isOverweight = calculateOverweight(state);
+        let effectiveVal = safeActVal;
+
+        if (isOverweight) {
+          if (act.target === "SUSTENANCE_ADD")
+            effectiveVal = Math.max(1, Math.floor(effectiveVal / 2));
+          if (act.target === "SUSTENANCE_DRAIN")
+            effectiveVal = effectiveVal * 2;
+        }
+
+        let newSustenance = updatedSustenance.current;
+
+        if (act.target === "SUSTENANCE_ADD") newSustenance += effectiveVal;
+        if (act.target === "SUSTENANCE_DRAIN") newSustenance -= effectiveVal;
+
+        if (newSustenance < 0) {
+          const deficit = Math.abs(newSustenance);
+          const hpDamage = deficit * VG_CONFIG.rules.starvationHpDamagePerPoint;
+          updatedHp.current = Math.max(0, updatedHp.current - hpDamage);
+          newSustenance = 0;
+        } else if (newSustenance > maxSustenance) {
+          const excess = newSustenance - maxSustenance;
+          const tempPerPoint = Math.max(
+            1,
+            Math.floor((state.attributes.constitution || 0) / 2),
+          );
+          const tempHpAdded = Math.min(
+            excess * tempPerPoint,
+            (state.attributes.constitution || 0) * 2,
+          );
+          updatedHp.temp += tempHpAdded;
+          newSustenance = maxSustenance;
+        }
+        updatedSustenance.current = newSustenance;
       }
-      if (act.target === "SUSTENANCE_ADD") updatedSustenance.current += act.val;
-      if (act.target === "SUSTENANCE_DRAIN")
-        updatedSustenance.current -= act.val;
+
       if (act.target === "EVILNESS_ADD")
-        updatedEvilness = Math.min(10, updatedEvilness + act.val);
+        updatedEvilness = Math.min(10, updatedEvilness + safeActVal);
       if (act.target === "EVILNESS_SUB")
-        updatedEvilness = Math.max(0, updatedEvilness - act.val);
+        updatedEvilness = Math.max(0, updatedEvilness - safeActVal);
+
+      const finalEnergyCap = getEnergyCap(state, updatedSustenance.current);
+      updatedEnergyVal = Math.min(updatedEnergyVal, finalEnergyCap);
 
       return {
         hp: updatedHp,
         sustenance: updatedSustenance,
-        energy: updatedEnergy,
+        energy: { current: updatedEnergyVal },
         evilness: updatedEvilness,
       };
     });

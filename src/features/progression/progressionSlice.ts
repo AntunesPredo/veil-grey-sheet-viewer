@@ -123,6 +123,12 @@ export const createProgressionSlice: StateCreator<
         const satiatedMax =
           sustanceStages[0] + sustanceStages[1] + sustanceStages[2] - 1;
 
+        const agi = Math.floor(
+          ((attributes.dexterity || 0) + (attributes.instinct || 0)) / 2,
+        );
+        const ap = 1 + Math.floor(agi / 3);
+        const maxEnergy = (4 + ap) * 3;
+
         updates.hp = {
           ...state.hp,
           current: startHp,
@@ -130,7 +136,7 @@ export const createProgressionSlice: StateCreator<
         };
         updates.crisis = { ...state.crisis, ignore: false };
         updates.sustenance = { ...state.sustenance, current: satiatedMax };
-        updates.energy = "rested";
+        updates.energy = { current: maxEnergy };
         updates.insanity = { ...state.insanity, current: 0 };
       }
 

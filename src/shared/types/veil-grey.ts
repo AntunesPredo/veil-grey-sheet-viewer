@@ -46,7 +46,7 @@ export interface Disadvantage {
   effects: CustomEffect[];
 }
 
-export type EnergyLevel = "rested" | "tired" | "exhausted";
+export type EnergyState = "RESTED" | "TIRED" | "EXHAUSTED";
 export type SustenanceState = "STARVING" | "HUNGRY" | "SATIATED" | "FULL";
 export type InsanityState = "STABLE" | "UNSTABLE" | "INSANE";
 export type CrisisState = "COLLAPSE" | "DEATH" | null;
@@ -58,6 +58,8 @@ export type CustomEffectTarget =
   | "HP"
   | "INSANITY"
   | "MOVEMENT"
+  | "ACTION_POINTS"
+  | "REACTIONS"
   | Attribute
   | SecondaryAttribute
   | Skill;
@@ -80,8 +82,10 @@ export type InstantActionTarget =
   | "HP_HEAL"
   | "HP_DRAIN"
   | "HP_TEMP"
-  | "ENERGY_RESTORE"
-  | "ENERGY_DRAIN"
+  | "ENERGY_STAGE_RESTORE"
+  | "ENERGY_STAGE_DRAIN"
+  | "ENERGY_USES_RESTORE"
+  | "ENERGY_USES_DRAIN"
   | "SUSTENANCE_ADD"
   | "SUSTENANCE_DRAIN"
   | "INSANITY_ADD"
@@ -90,7 +94,7 @@ export type InstantActionTarget =
   | "EVILNESS_SUB";
 
 export interface InstantAction {
-  id: number;
+  id: string;
   target: InstantActionTarget;
   val: number;
   description: string;

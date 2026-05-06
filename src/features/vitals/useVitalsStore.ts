@@ -51,6 +51,13 @@ interface VitalsStore {
   ) => void;
   setSustenanceInputValue: (val: string) => void;
   closeSustenanceModal: () => void;
+
+  isQuickRestOpen: boolean;
+  isFullRestOpen: boolean;
+  openQuickRest: () => void;
+  closeQuickRest: () => void;
+  openFullRest: () => void;
+  closeFullRest: () => void;
 }
 
 export const useVitalsStore = create<VitalsStore>((set) => ({
@@ -102,4 +109,11 @@ export const useVitalsStore = create<VitalsStore>((set) => ({
   setSustenanceInputValue: (val) => set({ sustenanceInputValue: val }),
   closeSustenanceModal: () =>
     set({ isSustenanceOpen: false, isSustenanceSystemInjection: false }),
+
+  isQuickRestOpen: false,
+  isFullRestOpen: false,
+  openQuickRest: () => set({ isQuickRestOpen: true }),
+  closeQuickRest: () => set({ isQuickRestOpen: false }),
+  openFullRest: () => set({ isFullRestOpen: true }),
+  closeFullRest: () => set({ isFullRestOpen: false }),
 }));

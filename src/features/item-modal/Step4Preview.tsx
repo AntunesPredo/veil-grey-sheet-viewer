@@ -39,7 +39,7 @@ export function Step4Preview({ formData, setFormData }: Step4PreviewProps) {
     }));
   };
 
-  const handleRemoveAction = (id: number) => {
+  const handleRemoveAction = (id: string) => {
     setFormData((p) => ({
       ...p,
       instantActions: p.instantActions.filter((a) => a.id !== id),

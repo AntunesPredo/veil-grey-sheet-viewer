@@ -227,10 +227,18 @@ export function HashGeneratorModal({
                     <option value="HP_HEAL">PONTOS DE VIDA (+ CURA)</option>
                     <option value="HP_DRAIN">PONTOS DE VIDA (- DANO)</option>
                     <option value="HP_TEMP">VIDA TEMPORÁRIA (+ TEMP HP)</option>
-                    <option value="ENERGY_RESTORE">
-                      ENERGIA (RESTAURAR NÍVEL)
+                    <option value="ENERGY_STAGE_RESTORE">
+                      ENERGIA (+1 ESTÁGIO)
                     </option>
-                    <option value="ENERGY_DRAIN">ENERGIA (DRENAR NÍVEL)</option>
+                    <option value="ENERGY_STAGE_DRAIN">
+                      ENERGIA (-1 ESTÁGIO)
+                    </option>
+                    <option value="ENERGY_USES_RESTORE">
+                      ENERGIA (+ USOS DE BATERIA)
+                    </option>
+                    <option value="ENERGY_USES_DRAIN">
+                      ENERGIA (- USOS DE BATERIA)
+                    </option>
                     <option value="SUSTENANCE_ADD">
                       ALIMENTAÇÃO (+ SACIEDADE)
                     </option>

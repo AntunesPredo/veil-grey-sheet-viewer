@@ -28,9 +28,8 @@ export function SustenanceTransactionModal() {
   const updateSustenance = useCharacterStore((state) => state.updateSustenance);
   const applyDamage = useCharacterStore((state) => state.applyDamage);
   const updateHpTemp = useCharacterStore((state) => state.updateHpTemp);
-  const updateEnergy = useCharacterStore((state) => state.updateEnergy);
 
-  const { maxSustenance, isOverweight, sustanceStages } = useCharacterStats();
+  const { maxSustenance, isOverweight } = useCharacterStats();
 
   const [step, setStep] = useState<"INPUT" | "CONFIRM">("INPUT");
   const [rolledAmount, setRolledAmount] = useState(0);
@@ -110,11 +109,6 @@ export function SustenanceTransactionModal() {
       logMsg += `\n> **[OVERHEAL] EXCESSO NUTRICIONAL:** +${tempHpAdded} PV Temporários alocados.`;
       RetroToast.success(`OVERHEAL: +${tempHpAdded} PV TEMP.`);
     }
-
-    const thresholdStarving = sustanceStages[0] - 1;
-    const thresholdHungry = thresholdStarving + sustanceStages[1];
-    if (newSustenance <= thresholdStarving) updateEnergy("exhausted");
-    else if (newSustenance <= thresholdHungry) updateEnergy("tired");
 
     dispatchDiscordLog("PLAYER", name, logMsg);
     handleClose();

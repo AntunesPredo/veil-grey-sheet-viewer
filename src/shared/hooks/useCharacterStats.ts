@@ -5,6 +5,7 @@ import { buildInsanityStages, buildSustenanceStages } from "../utils/mathUtils";
 import type {
   SustenanceState,
   InsanityState,
+  EnergyState,
   CustomEffectTarget,
   CustomEffect,
 } from "../types/veil-grey";
@@ -16,6 +17,7 @@ export function useCharacterStats() {
   const sustenance = useCharacterStore((state) => state.sustenance);
   const energy = useCharacterStore((state) => state.energy);
   const insanity = useCharacterStore((state) => state.insanity);
+  const customEffects = useCharacterStore((state) => state.customEffects);
 
   return useMemo(() => {
     const rules = VG_CONFIG.rules;
@@ -31,12 +33,46 @@ export function useCharacterStats() {
       ),
     };
 
-    const isInitialCreation = hp.baseMax === 0;
+    const activeEffects = [
+      ...customEffects,
+      ...inventory
+        .filter((i) => i.isEquipped)
+        .flatMap((i) => i.effects?.filter((e) => e.mode === "FIXED") || []),
+    ];
+
+    const getTargetSum = (target: string) =>
+      activeEffects
+        .filter((e) => e.target === target && e.mode !== "OPTIONAL")
+        .reduce((sum, e) => sum + e.val, 0);
+
+    const apMod = getTargetSum("ACTION_POINTS");
+    const rxMod = getTargetSum("REACTIONS");
+    const movMod = getTargetSum("MOVEMENT");
+
+    const baseAp = 1 + Math.floor(secondaryAttributes.agility / 3);
+    const baseRx = 1 + Math.floor(secondaryAttributes.agility / 4);
+    const baseMov = Math.max(1, Math.floor(secondaryAttributes.agility / 2));
+
+    const actionPoints = Math.max(1, baseAp + apMod);
+    const reactions = Math.max(0, baseRx + rxMod);
+    const movement = Math.max(1, baseMov + movMod);
+
+    const safeHpBaseMax = isNaN(Number(hp.baseMax)) ? 0 : Number(hp.baseMax);
+    const safeHpCurrent = isNaN(Number(hp.current)) ? 0 : Number(hp.current);
+    const safeHpMaxBonus = isNaN(Number(hp.maxBonus)) ? 0 : Number(hp.maxBonus);
+    const safeSustenance = isNaN(Number(sustenance.current))
+      ? 0
+      : Number(sustenance.current);
+    const safeInsanity = isNaN(Number(insanity.current))
+      ? 0
+      : Number(insanity.current);
+
+    const isInitialCreation = safeHpBaseMax === 0;
     const resolvedBaseHp = isInitialCreation
       ? rules.baseHp + attributes.constitution * 4
-      : hp.baseMax;
+      : safeHpBaseMax;
 
-    const maxHp: number = resolvedBaseHp + (hp.maxBonus || 0);
+    const maxHp: number = resolvedBaseHp + safeHpMaxBonus;
 
     const maxInsanity = rules.baseInsanity + secondaryAttributes.mental_health;
     const maxSustenance = rules.baseSustenance + secondaryAttributes.mass;
@@ -82,7 +118,7 @@ export function useCharacterStats() {
 
     const isOverweight = currentLoad > maxLoad;
 
-    const actualHp = Math.min(hp.current, maxHp);
+    const actualHp = Math.min(safeHpCurrent, maxHp);
     const hpPorc = maxHp === 0 ? 0 : (actualHp / maxHp) * 100;
 
     const isInjured = hp.autoApplyInjury
@@ -94,12 +130,11 @@ export function useCharacterStats() {
 
     let sustenanceState: SustenanceState = "FULL";
     const sustanceStages = buildSustenanceStages(maxSustenance);
-    if (sustenance.current <= sustanceStages[0] - 1)
-      sustenanceState = "STARVING";
-    else if (sustenance.current <= sustanceStages[0] - 1 + sustanceStages[1])
+    if (safeSustenance <= sustanceStages[0] - 1) sustenanceState = "STARVING";
+    else if (safeSustenance <= sustanceStages[0] - 1 + sustanceStages[1])
       sustenanceState = "HUNGRY";
     else if (
-      sustenance.current <=
+      safeSustenance <=
       sustanceStages[0] - 1 + sustanceStages[1] + sustanceStages[2]
     )
       sustenanceState = "SATIATED";
@@ -107,11 +142,32 @@ export function useCharacterStats() {
     let insanityState: InsanityState = "STABLE";
     const insStages = buildInsanityStages(maxInsanity, insanity.volatile);
 
-    if (insanity.current >= insStages[0] + insStages[1]) {
+    if (safeInsanity >= insStages[0] + insStages[1]) {
       insanityState = "INSANE";
-    } else if (insanity.current >= insStages[0]) {
+    } else if (safeInsanity >= insStages[0]) {
       insanityState = "UNSTABLE";
     }
+
+    const slotsPerStage = 4 + actionPoints;
+    const maxEnergy = slotsPerStage * 3;
+
+    const rawEnergyCurrent =
+      typeof energy === "object" &&
+      energy !== null &&
+      "current" in energy &&
+      !isNaN(Number(energy.current))
+        ? Number(energy.current)
+        : maxEnergy;
+
+    let energyCap = maxEnergy;
+    if (sustenanceState === "STARVING") energyCap = slotsPerStage;
+    else if (sustenanceState === "HUNGRY") energyCap = slotsPerStage * 2;
+
+    const actualEnergy = Math.min(rawEnergyCurrent, energyCap);
+
+    let energyState: EnergyState = "RESTED";
+    if (actualEnergy <= slotsPerStage) energyState = "EXHAUSTED";
+    else if (actualEnergy <= slotsPerStage * 2) energyState = "TIRED";
 
     const systemEffects: CustomEffect[] = [];
     let effectIdCounter = 9000;
@@ -131,7 +187,6 @@ export function useCharacterStats() {
       });
     };
 
-    // 1. HEALTH
     if (isVeryInjured) {
       const desc = "[LESÃO: MUITO MACHUCADO]";
       addSysEffect("ATT_PHYSICAL", -4, desc);
@@ -150,7 +205,6 @@ export function useCharacterStats() {
       addSysEffect("SKILL_SOCIAL", -2, desc);
     }
 
-    // 2. MADNESS
     if (insanityState === "UNSTABLE") {
       const desc = "[MENTE INSTÁVEL]";
       addSysEffect("instinct", -1, desc);
@@ -161,7 +215,7 @@ export function useCharacterStats() {
       addSysEffect("instinct", -2, descObj);
       addSysEffect("intelligence", -2, descObj);
       addSysEffect("wisdom", -2, descObj);
-      const descGeral = "[INDIVÍDUO DESFUNCIONAL]";
+      const descGeral = "[MENTE COLAPSANDO]";
       addSysEffect("ATT_PHYSICAL", -2, descGeral);
       addSysEffect("SKILL_PHYSICAL", -2, descGeral);
       addSysEffect("ATT_MENTAL", -2, descGeral);
@@ -184,22 +238,36 @@ export function useCharacterStats() {
       addSysEffect("ATT_MENTAL", -2, desc);
     }
 
-    // // 4. ENERGY
-    // if (energy === "tired") {
-    //   const desc = "[SISTEMA: CANSADO]";
-    //   addSysEffect("ATT_PHYSICAL", -2, desc);
-    //   addSysEffect("SKILL_PHYSICAL", -2, desc);
-    //   addSysEffect("ATT_SOCIAL", -1, desc);
-    //   addSysEffect("SKILL_SOCIAL", -1, desc);
-    // } else if (energy === "exhausted") {
-    //   const desc = "[SISTEMA: EXAUSTO]";
-    //   addSysEffect("ATT_PHYSICAL", -3, desc);
-    //   addSysEffect("SKILL_PHYSICAL", -3, desc);
-    //   addSysEffect("ATT_SOCIAL", -2, desc);
-    //   addSysEffect("SKILL_SOCIAL", -2, desc);
-    //   addSysEffect("ATT_MENTAL", -2, desc);
-    //   addSysEffect("SKILL_MENTAL", -2, desc);
-    // }
+    if (energyState === "TIRED") {
+      const desc = "[SISTEMA: CANSADO]";
+      addSysEffect("ATT_PHYSICAL", -2, desc);
+      addSysEffect("SKILL_PHYSICAL", -2, desc);
+      addSysEffect("ATT_SOCIAL", -1, desc);
+      addSysEffect("SKILL_SOCIAL", -1, desc);
+    } else if (energyState === "EXHAUSTED") {
+      const desc = "[SISTEMA: EXAUSTO]";
+      addSysEffect("ATT_PHYSICAL", -3, desc);
+      addSysEffect("SKILL_PHYSICAL", -3, desc);
+      addSysEffect("ATT_SOCIAL", -2, desc);
+      addSysEffect("SKILL_SOCIAL", -2, desc);
+      addSysEffect("ATT_MENTAL", -2, desc);
+      addSysEffect("SKILL_MENTAL", -2, desc);
+    }
+
+    const thresholdStarving = sustanceStages[0] - 1;
+    const thresholdHungry = thresholdStarving + sustanceStages[1];
+    let minSustenanceAllowed = 0;
+
+    if (safeSustenance > thresholdHungry) {
+      minSustenanceAllowed = thresholdHungry + 1;
+    } else if (safeSustenance > thresholdStarving) {
+      minSustenanceAllowed = thresholdStarving + 1;
+    }
+
+    const availableSustenanceToSpend = Math.max(
+      0,
+      safeSustenance - minSustenanceAllowed,
+    );
 
     return {
       secondaryAttributes,
@@ -216,7 +284,19 @@ export function useCharacterStats() {
       sustanceStages,
       insanityState,
       insStages,
+      actionPoints,
+      apMod,
+      reactions,
+      rxMod,
+      movement,
+      movMod,
+      slotsPerStage,
+      maxEnergy,
+      energyState,
+      energyCap,
+      actualEnergy,
+      availableSustenanceToSpend,
       systemEffects,
     };
-  }, [attributes, inventory, hp, sustenance, energy, insanity]);
+  }, [attributes, inventory, hp, sustenance, energy, insanity, customEffects]);
 }

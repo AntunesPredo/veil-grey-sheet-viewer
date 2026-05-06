@@ -1,4 +1,5 @@
 import { DisadvantagesWidget } from "./DisadvantagesWidget";
+import { EnergyWidget } from "./EnergyWidget";
 import { HealthWidget } from "./HealthWidget";
 import { MadnessGaugeWidget } from "./MadnessGaugeWidget";
 import { SustenanceWidget } from "./SustenanceWidget";
@@ -55,46 +56,31 @@ export function VitalsPanel() {
           number="1"
           classContainer="p-5"
         >
-          <>
-            <HealthWidget />
-
-            <div className="border-t-2 border-dashed border-[var(--theme-border)] pt-5 grid grid-cols-2 gap-4 flex-1">
-              <div className="flex flex-col justify-center relative">
-                <span className="absolute -top-3 left-2 bg-black px-2 text-[8px] font-mono text-[var(--theme-border)] tracking-widest">
-                  SLOT: NUTRITION
-                </span>
-                <div className="h-16 border border-[var(--theme-border)] opacity-20 flex items-center justify-center font-mono text-xs">
-                  Aguardando Módulo...
-                </div>
-              </div>
-              <div className="border-l-2 border-dashed border-[var(--theme-border)] pl-4 relative">
-                <span className="absolute -top-3 left-6 bg-black px-2 text-[8px] font-mono text-[var(--theme-border)] tracking-widest">
-                  SLOT: ENERGY
-                </span>
-                <div className="h-16 border border-[var(--theme-border)] opacity-20 flex items-center justify-center font-mono text-xs">
-                  Aguardando Módulo...
-                </div>
-              </div>
-            </div>
-          </>
+          <HealthWidget />
         </WidgetBlade>
         <WidgetBlade title="Medidor de Sanidade" number="2">
           <MadnessGaugeWidget />
         </WidgetBlade>
       </div>
-      <WidgetBlade title="NUTRIÇÃO" number="3">
-        <SustenanceWidget />
-      </WidgetBlade>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <WidgetBlade title="ANOMALIAS REGISTRADAS" number="4" isDanger>
-          <DisadvantagesWidget />
+        <WidgetBlade title="NUTRIÇÃO" number="3">
+          <SustenanceWidget />
         </WidgetBlade>
+        <WidgetBlade title="ENERGIA" number="4" classContainer="p-5">
+          <EnergyWidget />
+        </WidgetBlade>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <WidgetBlade
           title="Sistema de modificadores"
           number="5"
           classContainer="p-5"
         >
           <SystemModifiersWidget />
+        </WidgetBlade>
+        <WidgetBlade title="ANOMALIAS REGISTRADAS" number="6" isDanger>
+          <DisadvantagesWidget />
         </WidgetBlade>
       </div>
     </div>

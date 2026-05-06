@@ -28,7 +28,7 @@ export function InstantActionModal({
       return;
     }
     const newAction: InstantAction = {
-      id: Date.now() + Math.random(),
+      id: crypto.randomUUID(),
       target: target as InstantActionTarget,
       val,
       description: desc,
@@ -39,11 +39,23 @@ export function InstantActionModal({
     setVal(0);
     setTarget("");
     setError("");
+    closeModal();
+  };
+
+  const closeModal = () => {
+    setDesc("");
+    setVal(0);
+    setTarget("");
+    setError("");
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`SINTETIZAR AÇÃO IMEDIATA`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={closeModal}
+      title={`SINTETIZAR AÇÃO IMEDIATA`}
+    >
       <div className="flex flex-col gap-3 text-left">
         <div>
           <span className="text-[10px] mb-1 block text-[var(--theme-accent)] tracking-widest font-bold">
@@ -70,12 +82,22 @@ export function InstantActionModal({
             <option value="HP_HEAL">PONTOS DE VIDA (+ CURA)</option>
             <option value="HP_DRAIN">PONTOS DE VIDA (- DANO)</option>
             <option value="HP_TEMP">VIDA TEMPORÁRIA (+ TEMP HP)</option>
-            <option value="ENERGY_RESTORE">ENERGIA (RESTAURAR NÍVEL)</option>
-            <option value="ENERGY_DRAIN">ENERGIA (DRENAR NÍVEL)</option>
+
+            <option disabled>────────────</option>
+            <option value="ENERGY_STAGE_RESTORE">ENERGIA (+1 ESTÁGIO)</option>
+            <option value="ENERGY_STAGE_DRAIN">ENERGIA (-1 ESTÁGIO)</option>
+            <option value="ENERGY_USES_RESTORE">
+              ENERGIA (+ USOS DE BATERIA)
+            </option>
+            <option value="ENERGY_USES_DRAIN">
+              ENERGIA (- USOS DE BATERIA)
+            </option>
+
+            <option disabled>────────────</option>
             <option value="SUSTENANCE_ADD">ALIMENTAÇÃO (+ SACIEDADE)</option>
             <option value="SUSTENANCE_DRAIN">ALIMENTAÇÃO (- SACIEDADE)</option>
-            <option value="EVILNESS_ADD">LOUCURA (+ SUCUMBIR)</option>
-            <option value="EVILNESS_SUB">LOUCURA (- RECENTRALIZAR)</option>
+            <option value="INSANITY_ADD">LOUCURA (+ SUCUMBIR)</option>
+            <option value="INSANITY_DRAIN">LOUCURA (- RECENTRALIZAR)</option>
             <option value="EVILNESS_ADD">MALDADE (+ CORRUPÇÃO)</option>
             <option value="EVILNESS_SUB">MALDADE (- REDENÇÃO)</option>
           </select>
@@ -92,8 +114,8 @@ export function InstantActionModal({
             className="w-full"
           />
           <span className="text-[8px] text-[var(--theme-text)]/50 italic mt-1 block">
-            * Alvos de Energia ignoram o valor numérico (sobem/descem 1 nível
-            por uso).
+            * Efeitos de Mudar Estágio de Energia ignoram o valor numérico
+            (sobem/descem 1 estágio inteiro por uso).
           </span>
         </div>
 
@@ -104,7 +126,7 @@ export function InstantActionModal({
         )}
 
         <div className="flex justify-end gap-2 mt-2">
-          <Button variant="danger" onClick={onClose}>
+          <Button variant="danger" onClick={closeModal}>
             CANCELAR
           </Button>
           <Button variant="primary" onClick={handleInject}>

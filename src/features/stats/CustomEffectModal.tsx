@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { VG_CONFIG } from "../../shared/config/system.config";
 import type {
   CustomEffectTarget,
@@ -32,15 +32,13 @@ export function CustomEffectModal({
   const [mode, setMode] = useState<EffectMode | "">("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      if (allowedModes.length === 1) {
-        setMode(allowedModes[0]);
-      } else {
-        setMode("");
-      }
-    }
-  }, [isOpen, allowedModes]);
+  const [prevOpen, setPrevOpen] = useState(false);
+  if (isOpen && !prevOpen) {
+    setPrevOpen(true);
+    setMode(allowedModes.length === 1 ? allowedModes[0] : "");
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleInject = () => {
     if (!desc || !target || !mode) {
@@ -121,7 +119,9 @@ export function CustomEffectModal({
         <>
           <option value="HP">PONTOS DE VIDA (HP)</option>
           <option value="INSANITY">LOUCURA</option>
-          <option value="MOVEMENT">MOVIMENTO</option>
+          <option value="MOVEMENT">MOVIMENTO (MOV)</option>
+          <option value="ACTION_POINTS">PONTOS DE AÇÃO (AP)</option>
+          <option value="REACTIONS">REAÇÕES (RCT)</option>
         </>
       );
     if (category === "progression")

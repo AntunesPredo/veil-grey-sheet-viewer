@@ -114,7 +114,6 @@ export const createInventorySlice: StateCreator<
       if (!itemToEquip) return state;
 
       const isEquipping = !itemToEquip.isEquipped;
-
       const isArmor = "armorProps" in itemToEquip && !!itemToEquip.armorProps;
 
       return {
@@ -406,6 +405,9 @@ export const createInventorySlice: StateCreator<
       rollData?: { skillId: string | null; loss: number; bonusDamage?: number };
     } = { success: false, message: "" };
 
+    const consumedTempEffects: CustomEffect[] = [];
+    const consumedActions: InstantAction[] = [];
+
     set((state) => {
       const item = state.inventory.find((i) => i.id === id);
       if (!item || !("uses" in item)) {
@@ -414,8 +416,6 @@ export const createInventorySlice: StateCreator<
       }
 
       let newInventory = [...state.inventory];
-      const consumedTempEffects: CustomEffect[] = [];
-      const consumedActions: InstantAction[] = [];
       let ammoBonusDamage = 0;
 
       if (item.effects) {
@@ -583,51 +583,14 @@ export const createInventorySlice: StateCreator<
         result = { success: true, message: "OK" };
       }
 
-      const updatedHp = { ...state.hp };
-      const updatedSustenance = { ...state.sustenance };
-      let updatedEnergy = state.energy;
-      let updatedEvilness = state.evilness;
-
-      consumedActions.forEach((act) => {
-        if (act.target === "HP_HEAL") {
-          updatedHp.current = updatedHp.current + act.val;
-        }
-        if (act.target === "HP_DRAIN") {
-          updatedHp.current = Math.max(0, updatedHp.current - act.val);
-        }
-        if (act.target === "HP_TEMP") {
-          updatedHp.temp += act.val;
-        }
-        if (act.target === "ENERGY_RESTORE") {
-          if (updatedEnergy === "exhausted") updatedEnergy = "tired";
-          else if (updatedEnergy === "tired") updatedEnergy = "rested";
-        }
-        if (act.target === "ENERGY_DRAIN") {
-          if (updatedEnergy === "rested") updatedEnergy = "tired";
-          else if (updatedEnergy === "tired") updatedEnergy = "exhausted";
-        }
-        if (act.target === "SUSTENANCE_ADD") {
-          updatedSustenance.current = updatedSustenance.current + act.val;
-        }
-        if (act.target === "SUSTENANCE_DRAIN") {
-          updatedSustenance.current = updatedSustenance.current - act.val;
-        }
-        if (act.target === "EVILNESS_ADD") {
-          updatedEvilness = Math.min(10, updatedEvilness + act.val);
-        }
-        if (act.target === "EVILNESS_SUB") {
-          updatedEvilness = Math.max(0, updatedEvilness - act.val);
-        }
-      });
-
       return {
         inventory: newInventory,
         customEffects: [...state.customEffects, ...consumedTempEffects],
-        hp: updatedHp,
-        sustenance: updatedSustenance,
-        energy: updatedEnergy,
-        evilness: updatedEvilness,
       };
+    });
+
+    consumedActions.forEach((act) => {
+      get().processDirectAction(act);
     });
 
     return result;

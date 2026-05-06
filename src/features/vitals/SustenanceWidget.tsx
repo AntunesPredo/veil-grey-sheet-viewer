@@ -347,7 +347,7 @@ export function SustenanceWidget() {
             <Button
               size="sm"
               variant="danger"
-              className="h-8 py-0 px-4 text-[10px] border-dashed flex-1 md:flex-none"
+              className="h-8 py-0 px-4 text-[10px] flex-1 md:flex-none"
               onClick={() => openSustenanceModal("SUB")}
             >
               [ DRENAR ]
@@ -355,7 +355,7 @@ export function SustenanceWidget() {
             <Button
               size="sm"
               variant="success"
-              className="h-8 py-0 px-4 text-[10px] border-dashed flex-1 md:flex-none"
+              className="h-8 py-0 px-4 text-[10px] flex-1 md:flex-none"
               onClick={() => openSustenanceModal("ADD")}
             >
               [ INJETAR ]
