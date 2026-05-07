@@ -11,7 +11,6 @@ interface ItemActionsProps {
   allInventory: Item[];
   currentUses: number;
   onUse: (e: React.MouseEvent) => void;
-  onUpdateQty: (newVal: number) => void;
   isNestedAmmo?: boolean;
   disableUse?: boolean;
 }
@@ -27,11 +26,13 @@ export function ItemActions({
   allInventory,
   currentUses,
   onUse,
-  // onUpdateQty,
   isNestedAmmo = false,
   disableUse = false,
 }: ItemActionsProps) {
   const { getSkillById } = useSystemData();
+  // const updateInventoryItem = useCharacterStore(
+  //   (state) => state.updateInventoryItem,
+  // );
   const hasUses = "maxUses" in item;
   const maxUses = hasUses ? item.maxUses : 1;
   const canStack = item.type === "MATERIAL" || item.type === "CONSUMABLE";
@@ -40,6 +41,9 @@ export function ItemActions({
     (item.type === "ACTIVE" || item.type === "KIT") && item.skillId
       ? getSkillById(item.skillId)
       : null;
+
+  // const onUpdateQty = (val: number) =>
+  //   updateInventoryItem(item.id, "quantity", Math.max(1, val));
 
   const splitModal = useDisclosure();
   const mergeModal = useDisclosure();

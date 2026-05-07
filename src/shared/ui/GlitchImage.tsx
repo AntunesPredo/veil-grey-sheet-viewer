@@ -44,7 +44,7 @@ export function GlitchImage({
         src={src}
         alt={alt}
         onLoad={() => setTimeout(() => setIsLoaded(true), noLoad ? 0 : 1500)}
-        className={`w-full h-full object-cover transition-opacity duration-500 relative z-0 ${className} ${isLoaded ? "opacity-100 grayscale hover:grayscale-0" : "opacity-0"}`}
+        className={`w-full h-full object-cover transition-opacity duration-500 relative z-0 ${className} ${isLoaded ? "opacity-100 grayscale-20 hover:grayscale-0" : "opacity-0"}`}
         {...props}
       />
 

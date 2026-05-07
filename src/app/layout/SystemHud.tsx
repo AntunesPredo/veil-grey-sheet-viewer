@@ -14,6 +14,7 @@ import { CombatDefenseModal } from "../../features/vitals/CombatDefenseModal";
 import { SustenanceTransactionModal } from "../../features/vitals/SustenanceTransactionModal";
 import { QuickRestModal } from "../../features/vitals/QuickRestModal";
 import { FullRestModal } from "../../features/vitals/FullRestModal";
+import { NetworkQueueManager } from "./NetworkQueueManager";
 
 export function SystemHud() {
   const tabs = [
@@ -38,6 +39,7 @@ export function SystemHud() {
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--theme-background)] text-[var(--theme-accent)] font-mono md:p-4 gap-4">
       <CrisisOverlay />
       <RollResolverModal />
+      <NetworkQueueManager />
       <VitalsResolutionModal />
       <CombatDefenseModal />
       <InsanityTransactionModal />

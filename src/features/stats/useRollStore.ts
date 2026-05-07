@@ -6,11 +6,19 @@ export type RollStep = "STANDBY" | "CONFIGURING" | "RESOLVED";
 
 interface RollPayload {
   title: string;
-  baseExpression: string; // Ex: 1d20+4
+  baseExpression: string;
   dc?: number;
   fixedEffects: CustomEffect[];
   optionalEffects: CustomEffect[];
   resolveAsToast: boolean;
+}
+
+export interface RollRequestPayload {
+  requester: string;
+  title: string;
+  rollKey: string;
+  rollCategory: string;
+  dc?: number;
 }
 
 interface RollStore {
@@ -18,6 +26,9 @@ interface RollStore {
   payload: RollPayload | null;
   selectedOptionals: CustomEffect[];
   result: ParseResult | null;
+
+  incomingRequest: RollRequestPayload | null;
+  setIncomingRequest: (req: RollRequestPayload | null) => void;
 
   openConfig: (payload: RollPayload) => void;
   toggleOptional: (effect: CustomEffect) => void;
@@ -30,6 +41,9 @@ export const useRollStore = create<RollStore>((set) => ({
   payload: null,
   selectedOptionals: [],
   result: null,
+
+  incomingRequest: null,
+  setIncomingRequest: (req) => set({ incomingRequest: req }),
 
   openConfig: (payload) =>
     set({

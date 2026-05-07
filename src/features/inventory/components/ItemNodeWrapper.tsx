@@ -7,7 +7,10 @@ import type {
   CustomEffect,
   ActiveItem,
 } from "../../../shared/types/veil-grey";
-import { dispatchDiscordLog } from "../../../shared/utils/discordWebhook";
+import {
+  dispatchDiscordLog,
+  type DiscordEmbed,
+} from "../../../shared/utils/discordWebhook";
 import { RetroToast } from "../../../shared/ui/RetroToast";
 import { ItemHeader } from "./ItemHeader";
 import { ItemActions } from "./ItemActions";
@@ -15,9 +18,9 @@ import { ItemDetails } from "./ItemDetails";
 import { ItemRecursion } from "./ItemRecursion";
 import { executeRawRoll } from "../../../shared/utils/diceEngine";
 import { useSystemData } from "../../../shared/hooks/useSystemData";
-import { generateInjectionHash } from "../../../shared/utils/hashIntegration";
-
-const baseUrl = import.meta.env.VITE_APP_BASE_URL || window.location.href;
+import { TargetSelectionModal } from "../../../shared/ui/TargetSelectionModal";
+import { useNetworkStore } from "../../../shared/store/useNetworkStore";
+import { VG_CONFIG } from "../../../shared/config/system.config";
 
 type ItemNodeWrapperProps = {
   item: Item;
@@ -44,9 +47,7 @@ export const ItemNodeWrapper = React.memo(
     const name = useCharacterStore((state) => state.name);
     const skills = useCharacterStore((state) => state.skills);
     const sandboxMode = useCharacterStore((state) => state.sandboxMode);
-    const updateInventoryItem = useCharacterStore(
-      (state) => state.updateInventoryItem,
-    );
+
     const toggleEquipItem = useCharacterStore((state) => state.toggleEquipItem);
     const consumeItem = useCharacterStore((state) => state.consumeItem);
     const consumeRechargeable = useCharacterStore(
@@ -55,6 +56,9 @@ export const ItemNodeWrapper = React.memo(
 
     const { getSkillById } = useSystemData();
     const [isDescOpen, setIsDescOpen] = useState(false);
+    const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+
+    const sendPayload = useNetworkStore((state) => state.sendPayload);
 
     const childrenItems = useMemo(
       () => allInventory.filter((i) => i.parentId === item.id),
@@ -113,7 +117,6 @@ export const ItemNodeWrapper = React.memo(
       ) {
         const ammos = childrenItems.filter((i) => i.type === "CONSUMABLE");
         const effMap = new Map();
-
         ammos.forEach((ammo) => {
           ammo.effects?.forEach((e) => {
             effMap.set(e.description + e.target + e.val, e);
@@ -132,7 +135,6 @@ export const ItemNodeWrapper = React.memo(
               });
             });
         });
-
         effects = Array.from(effMap.values());
         return effects;
       }
@@ -143,11 +145,7 @@ export const ItemNodeWrapper = React.memo(
       listeners,
       setNodeRef: setDragRef,
       isDragging,
-    } = useDraggable({
-      id: item.id,
-      data: item,
-    });
-
+    } = useDraggable({ id: item.id, data: item });
     const { isOver, setNodeRef: setDropRef } = useDroppable({
       id: item.id,
       data: item,
@@ -192,6 +190,15 @@ export const ItemNodeWrapper = React.memo(
         return;
       }
 
+      if (
+        item.type === "ACTIVE" &&
+        item.combatProps &&
+        item.combatProps.weaponType !== "NONE"
+      ) {
+        setIsTargetModalOpen(true);
+        return;
+      }
+
       if (item.type === "RECHARGEABLE" || item.type === "KIT") {
         if (currentUses > 0) {
           consumeRechargeable(item.id);
@@ -210,145 +217,141 @@ export const ItemNodeWrapper = React.memo(
       } else {
         const res = consumeItem(item.id);
         if (res.success) {
-          let msg = `  **AÇÃO:** [${name}] usou **${item.name}**.`;
-
-          if (item.type === "ACTIVE") {
-            const activeItem = item as ActiveItem;
-            let attackRoll = 0;
-            let isCrit = false;
-            let isFail = false;
-            let rollLog = "";
-
-            if (res.rollData?.skillId) {
-              const skillVal =
-                skills[res.rollData.skillId as keyof typeof skills] || 0;
-              const rollRes = executeRawRoll(
-                `1d20+${skillVal > 1 ? skillVal : -1}`,
-              );
-              attackRoll = rollRes.total;
-              isCrit = rollRes.isCriticalSuccess;
-              isFail = rollRes.isCriticalFail;
-              rollLog = rollRes.log;
-            }
-
-            if (
-              activeItem.combatProps &&
-              activeItem.combatProps.weaponType !== "NONE"
-            ) {
-              const props = activeItem.combatProps;
-              let finalDmg = props.baseDamage;
-              const urlPrefix = baseUrl.split("?")[0] + "?inject=";
-
-              if (props.weaponType === "RANGED") {
-                const ammoBonus = res.rollData?.bonusDamage || 0;
-                finalDmg += ammoBonus;
-
-                const linkDamageHash = generateInjectionHash(
-                  {
-                    type: "ACTION",
-                    singleUse: false,
-                    data: {
-                      target: "HP_DRAIN",
-                      val: finalDmg,
-                      description: `Tiro recebido de ${name}`,
-                    },
-                  },
-                  { silent: true },
-                );
-
-                msg = `**ATAQUE À DISTÂNCIA**\n-# Atirador: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**\n> * * Dificuldade Base: **${props.baseDifficulty}**`;
-                if (attackRoll > props.baseDifficulty) {
-                  msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
-                  msg += `\n\n# [💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
-                } else {
-                  msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> BALA PERDIDA <<**`;
-                }
-                msg += `\n\n**LOG:**\n${"```"}${rollLog}${"```"}`;
-              } else if (props.weaponType === "MELEE") {
-                const scalingMap: Record<string, number> = {
-                  S: 5,
-                  A: 3,
-                  B: 2,
-                  C: 1,
-                  D: 0.5,
-                  NONE: 0,
-                };
-                const mult = scalingMap[props.scalingTier] || 0;
-
-                const attrStore = useCharacterStore.getState().attributes;
-                const attrVal = props.scalingAttr
-                  ? attrStore[props.scalingAttr] || 0
-                  : 0;
-
-                finalDmg += Math.floor(attrVal * mult);
-                if (isCrit) finalDmg *= 2;
-
-                const linkDamageHash = generateInjectionHash(
-                  {
-                    type: "ACTION",
-                    singleUse: false,
-                    data: {
-                      target: "HP_DRAIN",
-                      val: finalDmg,
-                      description: `Ataque Melee de ${name}`,
-                    },
-                  },
-                  { silent: true },
-                );
-                const linkDodgeHash = generateInjectionHash(
-                  {
-                    type: "COMBAT_DEFENSE",
-                    singleUse: false,
-                    data: {
-                      attackRoll,
-                      damage: finalDmg,
-                      defenseType: "DODGE",
-                      attackerName: name,
-                    },
-                  },
-                  { silent: true },
-                );
-                const linkBlockHash = generateInjectionHash(
-                  {
-                    type: "COMBAT_DEFENSE",
-                    singleUse: false,
-                    data: {
-                      attackRoll,
-                      damage: finalDmg,
-                      defenseType: "BLOCK",
-                      attackerName: name,
-                    },
-                  },
-                  { silent: true },
-                );
-
-                msg = `**ATAQUE CORPO-A-CORPO**\n-# Origem: ${name}\n## Arma [ *${item.name}* ]\n> -# Alcance: **${props.range}**`;
-                if (attackRoll > 4) {
-                  msg += `${isCrit ? " \n> **>>>>[ CRITICO! ]<<<<**" : ""}\n> * * DANO: **${finalDmg}**\n> * * ATAQUE ROLL: **${attackRoll}**`;
-                  msg += `\n**AÇÕES:**\n# [⚡ ESQUIVA (DES) ⚡](${urlPrefix}${linkDodgeHash})`;
-                  msg += `\n# [🛡️ BLOQUEIO (CON) 🛡️](${urlPrefix}${linkBlockHash})`;
-                  msg += `\n# [💥 DANO DIRETO 💥](${urlPrefix}${linkDamageHash})`;
-                } else {
-                  msg += `${isFail ? " \n> **>>>>[ ERRO CRITICO ]<<<<**" : ""}\n> * * ATAQUE ROLL: **${attackRoll}**\n> **>> ATAQUE FALHO <<**`;
-                }
-                msg += `\n\n**LOG:**\n${"```"}${rollLog}${"```"}`;
-              }
-            } else {
-              msg += `\n **DESGASTE:** -${res.rollData?.loss} Integridade.`;
-            }
-
-            dispatchDiscordLog("INVENTORY", name, msg);
-            RetroToast.success(
-              `USADO: ${item.name} -${res.rollData?.loss} Integridade.`,
-            );
-          } else {
-            dispatchDiscordLog("INVENTORY", name, msg);
-            RetroToast.success(`USADO: ${item.name}`);
-          }
+          dispatchDiscordLog(
+            "INVENTORY",
+            name,
+            ` **AÇÃO:** [${name}] usou **${item.name}**.`,
+          );
+          RetroToast.success(`USADO: ${item.name}`);
         } else {
           RetroToast.error(res.message);
         }
       }
+    };
+
+    const executeCombatAction = (targetName: string) => {
+      const res = consumeItem(item.id);
+      if (!res.success) {
+        RetroToast.error(res.message);
+        return;
+      }
+
+      const activeItem = item as ActiveItem;
+      const props = activeItem.combatProps!;
+
+      let attackRoll = 0;
+      let isCrit = false;
+      let isFail = false;
+      let rollLog = "";
+      let finalDmg = props.baseDamage;
+
+      if (res.rollData?.skillId) {
+        const skillVal =
+          skills[res.rollData.skillId as keyof typeof skills] || 0;
+        const rollRes = executeRawRoll(`1d20+${skillVal > 1 ? skillVal : -1}`);
+        attackRoll = rollRes.total;
+        isCrit = rollRes.isCriticalSuccess;
+        isFail = rollRes.isCriticalFail;
+        rollLog = rollRes.log;
+      }
+
+      if (props.weaponType === "RANGED") {
+        finalDmg += res.rollData?.bonusDamage || 0;
+      } else if (props.weaponType === "MELEE") {
+        const scalingMap: Record<string, number> = {
+          S: 5,
+          A: 3,
+          B: 2,
+          C: 1,
+          D: 0.5,
+          NONE: 0,
+        };
+        const mult = scalingMap[props.scalingTier] || 0;
+        const attrStore = useCharacterStore.getState().attributes;
+        const attrVal = props.scalingAttr
+          ? attrStore[props.scalingAttr] || 0
+          : 0;
+        finalDmg += Math.floor(attrVal * mult);
+        if (isCrit) finalDmg *= 2;
+      }
+
+      let isSuccess = false;
+      if (!isFail) {
+        if (
+          props.weaponType === "RANGED" &&
+          (attackRoll >= props.baseDifficulty || isCrit)
+        )
+          isSuccess = true;
+
+        if (
+          props.weaponType === "MELEE" &&
+          (attackRoll >= VG_CONFIG.rules.minMeleeAttack || isCrit)
+        )
+          isSuccess = true;
+      }
+
+      if (targetName !== "ENEMY" && targetName !== "SELF" && isSuccess) {
+        sendPayload(targetName, "COMBAT_DEFENSE", {
+          attackRoll,
+          damage: finalDmg,
+          attackerName: name,
+        });
+      }
+
+      const isCriticalStr = isCrit ? "\n> [!] CRITICO" : "";
+      const isFailStr = isFail ? "\n> [X] ERRO CRITICO" : "";
+
+      const combatEmbed: DiscordEmbed = {
+        title: `[>] ATAQUE ${props.weaponType === "RANGED" ? "A DISTANCIA" : "CORPO-A-CORPO"}`,
+        color: 16711680,
+        description: `**AGRESSOR:** ${name}\n**ALVO:** ${targetName}\n**ARMA:** ${item.name}\n**ALCANCE:** ${props.range}`,
+        fields: [
+          {
+            name: "ROLED",
+            value: `[*] **${attackRoll}**${isCriticalStr}${isFailStr}`,
+            inline: true,
+          },
+        ],
+        footer: { text: "SYS.MNLT // NETWORK_SYNC" },
+      };
+
+      if (props.weaponType === "RANGED") {
+        if (isSuccess) {
+          combatEmbed.fields!.push({
+            name: "DANO PROJETADO",
+            value: `[!] **${finalDmg} PV**`,
+            inline: true,
+          });
+        } else {
+          combatEmbed.fields!.push({
+            name: "STATUS",
+            value: "[~] >> BALA PERDIDA <<",
+            inline: true,
+          });
+        }
+      } else {
+        if (isSuccess) {
+          combatEmbed.fields!.push({
+            name: "DANO PROJETADO",
+            value: `[!] **${finalDmg} PV**`,
+            inline: true,
+          });
+        } else {
+          combatEmbed.fields!.push({
+            name: "STATUS",
+            value: "[~] >> ATAQUE FALHO <<",
+            inline: true,
+          });
+        }
+      }
+
+      combatEmbed.fields!.push({
+        name: "LOG DE EXECUCAO",
+        value: `\`\`\`\n${rollLog}\n\`\`\``,
+        inline: false,
+      });
+      dispatchDiscordLog("INVENTORY", name, "", [combatEmbed]);
+      RetroToast.success(`ATAQUE ENVIADO PARA: ${targetName}`);
     };
 
     const handleWebhook = (e: React.MouseEvent) => {
@@ -374,6 +377,12 @@ export const ItemNodeWrapper = React.memo(
         ref={setDropRef}
         className={`flex flex-col border transition-all duration-200 ${baseBgClass} ${borderClass} ${dropHighlight}`}
       >
+        <TargetSelectionModal
+          isOpen={isTargetModalOpen}
+          onClose={() => setIsTargetModalOpen(false)}
+          onSelect={executeCombatAction}
+        />
+
         <div onClick={() => setIsDescOpen(!isDescOpen)}>
           <ItemHeader
             item={item}
@@ -411,9 +420,6 @@ export const ItemNodeWrapper = React.memo(
                     allInventory={allInventory}
                     currentUses={currentUses}
                     onUse={handleUse}
-                    onUpdateQty={(val) =>
-                      updateInventoryItem(item.id, "quantity", Math.max(1, val))
-                    }
                     isNestedAmmo={isNestedAmmo}
                     disableUse={disableUse}
                   />
@@ -465,12 +471,11 @@ export const ItemNodeWrapper = React.memo(
       });
       return hash;
     };
-
-    const prevHash = getChildrenHash(prev.allInventory, prev.item.id);
-    const nextHash = getChildrenHash(next.allInventory, next.item.id);
-
-    if (prevHash !== nextHash) return false;
-
+    if (
+      getChildrenHash(prev.allInventory, prev.item.id) !==
+      getChildrenHash(next.allInventory, next.item.id)
+    )
+      return false;
     return true;
   },
 );

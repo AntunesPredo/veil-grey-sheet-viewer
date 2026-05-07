@@ -64,15 +64,13 @@ export const createProgressionSlice: StateCreator<
   },
 
   addXp: (amount, log) =>
-    set((state) => {
-      const updates = state;
-      updates.xp = {
+    set((state) => ({
+      xp: {
         ...state.xp,
         current: state.xp.current + amount,
         usedXpLogs: [...state.xp.usedXpLogs, ...(log ? [log] : [])],
-      };
-      return updates;
-    }),
+      },
+    })),
 
   registerInjectId: (id) =>
     set((state) => ({ usedInjectIds: [...state.usedInjectIds, id] })),

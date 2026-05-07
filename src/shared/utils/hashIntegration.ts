@@ -4,12 +4,7 @@ import { RetroToast } from "../ui/RetroToast";
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const baseUrl = import.meta.env.VITE_APP_BASE_URL || window.location.href;
 
-export type InjectPayloadType =
-  | "XP"
-  | "ITEM"
-  | "EFFECT"
-  | "ACTION"
-  | "COMBAT_DEFENSE";
+type InjectPayloadType = "XP" | "ITEM" | "EFFECT" | "ACTION" | "COMBAT_DEFENSE";
 
 export interface InjectPayload {
   id: string;

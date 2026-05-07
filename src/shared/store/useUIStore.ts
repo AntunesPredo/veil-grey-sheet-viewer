@@ -48,7 +48,8 @@ export const useUIStore = create<UIState & UIActions>()(
         set((state) => ({
           accordions: {
             ...state.accordions,
-            [id]: !(state.accordions[id] ?? true),
+            [id]:
+              state.accordions[id] !== undefined ? !state.accordions[id] : true,
           },
         })),
       toggleSettingsModal: () =>

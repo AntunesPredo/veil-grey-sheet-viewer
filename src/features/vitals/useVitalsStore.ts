@@ -6,7 +6,6 @@ export type SustenanceMode = "ADD" | "SUB";
 export type DefenseData = {
   attackRoll: number;
   damage: number;
-  defenseType: "DODGE" | "BLOCK";
   attackerName: string;
 } | null;
 

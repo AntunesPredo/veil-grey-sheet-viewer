@@ -9,6 +9,7 @@ import { RoleSelectionScreen } from "../features/setup/RoleSelectionScreen";
 import { Booting } from "./layout/Booting";
 import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
 import { useUIStore } from "../shared/store/useUIStore";
+import { useNetworkStore } from "../shared/store/useNetworkStore";
 
 const inDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -80,6 +81,8 @@ export default function App() {
   const { powerState, setPowerState, theme } = useSystemStore();
   const creationStatus = useCharacterStore((state) => state.creationStatus);
   const setPendingInjection = useUIStore((state) => state.setPendingInjection);
+  const name = useCharacterStore((state) => state.name);
+  const connectNetwork = useNetworkStore((state) => state.connect);
 
   const cssVars = {
     "--theme-background": theme.background,
@@ -92,38 +95,23 @@ export default function App() {
   } as React.CSSProperties;
 
   useEffect(() => {
+    if (powerState === "ONLINE" && name) {
+      connectNetwork(name);
+    }
+  }, [powerState, name, connectNetwork]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const injectHash = params.get("inject");
 
     if (injectHash) {
       setPendingInjection(injectHash);
-      if (powerState === "STANDBY") setPowerState("ONLINE");
+      if (useSystemStore.getState().powerState === "STANDBY") {
+        useSystemStore.getState().setPowerState("ONLINE");
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-
-    // PWA Aready Open
-    if ("launchQueue" in window && window.launchQueue) {
-      (
-        window.launchQueue as {
-          setConsumer: (
-            callback: (launchParams: { targetURL: string }) => void,
-          ) => void;
-        }
-      ).setConsumer((launchParams) => {
-        if (!launchParams.targetURL) return;
-
-        const url = new URL(launchParams.targetURL);
-        const hash = url.searchParams.get("inject");
-
-        if (hash) {
-          setPendingInjection(hash);
-          if (useSystemStore.getState().powerState === "STANDBY") {
-            useSystemStore.getState().setPowerState("ONLINE");
-          }
-        }
-      });
-    }
-  }, [setPendingInjection, setPowerState, powerState]);
+  }, [setPendingInjection]);
 
   // useEffect(() => {
   //   let timer: ReturnType<typeof setTimeout>;
