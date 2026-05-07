@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { VitePWA } from "vite-plugin-pwa";
+import { VitePWA, type ManifestOptions } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
@@ -11,6 +11,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "robots.txt", "apple-touch-icon.png"],
       manifest: {
+        id: "/",
         name: "Veil Grey - Terminal HUD",
         short_name: "Veil Grey",
         description: "Interface Utilitaria para o RPG Veil Grey.",
@@ -32,12 +33,20 @@ export default defineConfig({
             purpose: "any maskable",
           },
         ],
+        url_handlers: [
+          {
+            origin: "https://veil-grey.vercel.app",
+          },
+        ],
         handle_links: "preferred",
         launch_handler: {
           client_mode: ["focus-existing", "auto"],
         },
-      },
+      } as Partial<ManifestOptions>,
     }),
   ],
   base: "/",
+  build: {
+    chunkSizeWarningLimit: 1500,
+  },
 });

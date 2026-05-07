@@ -97,12 +97,33 @@ export default function App() {
 
     if (injectHash) {
       setPendingInjection(injectHash);
-
-      setPowerState("ONLINE");
-
+      if (powerState === "STANDBY") setPowerState("ONLINE");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [setPendingInjection, setPowerState]);
+
+    // PWA Aready Open
+    if ("launchQueue" in window && window.launchQueue) {
+      (
+        window.launchQueue as {
+          setConsumer: (
+            callback: (launchParams: { targetURL: string }) => void,
+          ) => void;
+        }
+      ).setConsumer((launchParams) => {
+        if (!launchParams.targetURL) return;
+
+        const url = new URL(launchParams.targetURL);
+        const hash = url.searchParams.get("inject");
+
+        if (hash) {
+          setPendingInjection(hash);
+          if (useSystemStore.getState().powerState === "STANDBY") {
+            useSystemStore.getState().setPowerState("ONLINE");
+          }
+        }
+      });
+    }
+  }, [setPendingInjection, setPowerState, powerState]);
 
   // useEffect(() => {
   //   let timer: ReturnType<typeof setTimeout>;
