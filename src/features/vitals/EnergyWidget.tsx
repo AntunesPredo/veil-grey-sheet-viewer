@@ -19,7 +19,7 @@ export function EnergyWidget() {
     rxMod,
     movement,
     movMod,
-    availableSustenanceToSpend,
+    // availableSustenanceToSpend,
   } = useCharacterStats();
 
   const { openQuickRest, openFullRest } = useVitalsStore();
@@ -377,6 +377,7 @@ export function EnergyWidget() {
       <div className="mx-4 pb-5 grid grid-cols-[1fr_1.3fr_1fr] gap-3 md:gap-4 mt-2">
         <button
           onClick={openFullRest}
+          disabled
           className="group flex flex-col items-center justify-center p-3 border-2 border-[var(--theme-success)] bg-[var(--theme-background)] text-[var(--theme-success)] hover:bg-[var(--theme-success)] hover:text-black shadow-[0_4px_0_var(--theme-success)] active:shadow-[0_0px_0_var(--theme-success)] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:pointer-events-none outline-none"
         >
           <span className="font-black text-[10px] md:text-sm tracking-widest uppercase leading-tight group-hover:glow-none glow-success">
@@ -410,9 +411,10 @@ export function EnergyWidget() {
 
         <button
           onClick={openQuickRest}
-          disabled={
-            actualEnergy >= energyCap || availableSustenanceToSpend <= 0
-          }
+          disabled
+          // disabled={
+          //   actualEnergy >= energyCap || availableSustenanceToSpend <= 0
+          // }
           className="group flex flex-col items-center justify-center p-3 border-2 border-[var(--theme-warning)] bg-[var(--theme-background)] text-[var(--theme-warning)] hover:bg-[var(--theme-warning)] hover:text-black shadow-[0_4px_0_var(--theme-warning)] active:shadow-[0_0px_0_var(--theme-warning)] active:translate-y-[4px] transition-all disabled:opacity-50 disabled:pointer-events-none disabled:grayscale outline-none"
         >
           <span className="font-black text-[10px] md:text-sm tracking-widest uppercase leading-tight group-hover:glow-none glow-warning">
