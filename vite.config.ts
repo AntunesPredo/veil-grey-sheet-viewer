@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -14,12 +13,12 @@ export default defineConfig({
       manifest: {
         name: "Veil Grey - Terminal HUD",
         short_name: "Veil Grey",
-        description: "Interface Utilitária para o RPG Veil Grey.",
+        description: "Interface Utilitaria para o RPG Veil Grey.",
         theme_color: "#000000",
         background_color: "#000000",
         display: "standalone",
-        start_url: "/veil-grey-hud/",
-        scope: "/veil-grey-hud/",
+        start_url: "/",
+        scope: "/",
         icons: [
           {
             src: "pwa-192x192.png",
@@ -40,5 +39,5 @@ export default defineConfig({
       },
     }),
   ],
-  base: "/veil-grey-hud/",
+  base: "/",
 });
