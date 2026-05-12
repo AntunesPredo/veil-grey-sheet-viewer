@@ -53,8 +53,9 @@ export function SettingsModal({
     const { resetCharacterData, importCharacterData, ...dataToSave } =
       useCharacterStore.getState();
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const noSave = [resetCharacterData, importCharacterData];
+    delete noSave[0];
+    delete noSave[1];
 
     const payload = {
       vg_version: APP_VERSION,
