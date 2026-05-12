@@ -53,10 +53,12 @@ export function useCharacterStats() {
     const baseAp = 1 + Math.floor(secondaryAttributes.agility / 3);
     const baseRx = 1 + Math.floor(secondaryAttributes.agility / 4);
     const baseMov = Math.max(1, Math.floor(secondaryAttributes.agility / 2));
+    const rawMovement = baseMov + movMod;
 
     const actionPoints = Math.max(1, baseAp + apMod);
     const reactions = Math.max(0, baseRx + rxMod);
-    const movement = Math.max(1, baseMov + movMod);
+    const movement =
+      movMod < 0 ? Math.max(0, rawMovement) : Math.max(1, rawMovement);
 
     const safeHpBaseMax = isNaN(Number(hp.baseMax)) ? 0 : Number(hp.baseMax);
     const safeHpCurrent = isNaN(Number(hp.current)) ? 0 : Number(hp.current);
@@ -74,9 +76,13 @@ export function useCharacterStats() {
       : safeHpBaseMax;
 
     const maxHp: number = resolvedBaseHp + safeHpMaxBonus;
+    const insMod = getTargetSum("INSANITY");
+    const susMod = getTargetSum("SUSTENANCE");
 
-    const maxInsanity = rules.baseInsanity + secondaryAttributes.mental_health;
-    const maxSustenance = rules.baseSustenance + secondaryAttributes.mass;
+    const maxInsanity =
+      rules.baseInsanity + secondaryAttributes.mental_health + insMod;
+    const maxSustenance =
+      rules.baseSustenance + secondaryAttributes.mass + susMod;
 
     const { currentLoad, maxLoad, isOverweight } = calculateInventoryLoad(
       inventory,

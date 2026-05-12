@@ -139,15 +139,17 @@ export function HashGeneratorModal({
   const removeFromQueue = (tempId: string) =>
     setQueue((q) => q.filter((i) => i._tempId !== tempId));
 
-  const handleDispatchQueue = (targetName: string) => {
+  const handleDispatchQueue = (targets: string[]) => {
     queue.forEach((payload) => {
-      if (payload.type === "TEST") {
-        sendPayload(targetName, "ROLL_REQUEST", payload.data);
-      } else {
-        sendPayload(targetName, payload.type, payload.data);
-      }
+      targets.forEach((targetName) => {
+        if (payload.type === "TEST") {
+          sendPayload(targetName, "ROLL_REQUEST", payload.data);
+        } else {
+          sendPayload(targetName, payload.type, payload.data);
+        }
+      });
     });
-    RetroToast.success(`PACOTES ENVIADOS PARA: ${targetName}`);
+    RetroToast.success(`PACOTES ENVIADOS PARA: ${targets.join(", ")}`);
     setQueue([]);
     setIsTargetModalOpen(false);
     onClose();

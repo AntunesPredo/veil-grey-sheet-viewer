@@ -11,11 +11,15 @@ import type {
   Item,
   CustomEffect,
   InstantAction,
+  Note,
 } from "../../shared/types/veil-grey";
 
 export function NetworkQueueManager() {
   const queue = useNetworkStore((state) => state.queue);
   const popQueue = useNetworkStore((state) => state.popQueue);
+  const importExternalNote = useCharacterStore(
+    (state) => state.importExternalNote,
+  );
 
   const vitals = useVitalsStore();
   const {
@@ -171,6 +175,13 @@ export function NetworkQueueManager() {
       const actionData = current.data as InstantAction;
       processDirectAction(actionData);
       RetroToast.success(`AÇÃO IMEDIATA: [${actionData.description}]`);
+    } else if (current.type === "NOTE") {
+      const payloadData = current.data as {
+        note: Note;
+        effects: CustomEffect[];
+      };
+      importExternalNote(payloadData.note, payloadData.effects);
+      RetroToast.success(`NOTA INCORPORADA: [${payloadData.note.title}]`);
     }
     popQueue();
     processingIdRef.current = null;
@@ -243,6 +254,28 @@ export function NetworkQueueManager() {
               {(current.data as { dc?: number }).dc !== undefined && (
                 <span className="text-xs font-mono text-[var(--theme-warning)] mt-2 block font-bold">
                   DIFICULDADE ALVO: DC {(current.data as { dc: number }).dc}
+                </span>
+              )}
+            </div>
+          )}
+
+          {current.type === "NOTE" && (
+            <div className="flex flex-col gap-2 my-4 border border-[var(--theme-accent)] p-3 bg-[var(--theme-background)] text-left">
+              <span className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest border-b border-[var(--theme-accent)]/30 pb-1 uppercase">
+                DOCUMENTO ANEXADO
+              </span>
+              <span className="text-sm font-bold uppercase text-[var(--theme-accent)]">
+                {(current.data as { note: Note }).note.title}
+              </span>
+              <span className="text-xs font-mono text-[var(--theme-text)]/70 line-clamp-3 italic">
+                {(current.data as { note: Note }).note.content}
+              </span>
+              {(current.data as { effects: CustomEffect[] }).effects.length >
+                0 && (
+                <span className="text-[10px] text-[var(--theme-warning)] font-bold mt-2 uppercase tracking-widest">
+                  +{" "}
+                  {(current.data as { effects: CustomEffect[] }).effects.length}{" "}
+                  EFEITO(S) INCLUSO(S)
                 </span>
               )}
             </div>

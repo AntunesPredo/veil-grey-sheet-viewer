@@ -21,6 +21,7 @@ import { useSystemData } from "../../../shared/hooks/useSystemData";
 import { TargetSelectionModal } from "../../../shared/ui/TargetSelectionModal";
 import { useNetworkStore } from "../../../shared/store/useNetworkStore";
 import { VG_CONFIG } from "../../../shared/config/system.config";
+import { useVitalsStore } from "../../vitals/useVitalsStore";
 
 type ItemNodeWrapperProps = {
   item: Item;
@@ -72,7 +73,10 @@ export const ItemNodeWrapper = React.memo(
       item.type === "RECHARGEABLE" ||
       item.type === "KIT" ||
       (item.type === "ACTIVE" && "requiresAmmo" in item && item.requiresAmmo);
-    const canEquip = item.parentId === null && item.isCarried;
+    const canEquip =
+      item.parentId === null &&
+      item.isCarried &&
+      (item.type === "ACTIVE" || isEditMode);
     const isEquippableType =
       item.type === "EQUIPABLE" || item.type === "ACTIVE";
 
@@ -229,7 +233,7 @@ export const ItemNodeWrapper = React.memo(
       }
     };
 
-    const executeCombatAction = (targetName: string) => {
+    const executeCombatAction = (targets: string[]) => {
       const res = consumeItem(item.id);
       if (!res.success) {
         RetroToast.error(res.message);
@@ -290,68 +294,76 @@ export const ItemNodeWrapper = React.memo(
           isSuccess = true;
       }
 
-      if (targetName !== "ENEMY" && targetName !== "SELF" && isSuccess) {
-        sendPayload(targetName, "COMBAT_DEFENSE", {
-          attackRoll,
-          damage: finalDmg,
-          attackerName: name,
+      targets.forEach((targetName) => {
+        if (targetName === "SELF") {
+          useVitalsStore.getState().openDefenseModal({
+            attackRoll,
+            damage: finalDmg,
+            attackerName: name,
+          });
+        } else if (targetName !== "ENEMY" && isSuccess) {
+          sendPayload(targetName, "COMBAT_DEFENSE", {
+            attackRoll,
+            damage: finalDmg,
+            attackerName: name,
+          });
+        }
+
+        const isCriticalStr = isCrit ? "\n> [!] CRITICO" : "";
+        const isFailStr = isFail ? "\n> [X] ERRO CRITICO" : "";
+
+        const combatEmbed: DiscordEmbed = {
+          title: `[>] ATAQUE ${props.weaponType === "RANGED" ? "A DISTANCIA" : "CORPO-A-CORPO"}`,
+          color: 16711680,
+          description: `**AGRESSOR:** ${name}\n**ALVO:** ${targetName}\n**ARMA:** ${item.name}\n**ALCANCE:** ${props.range}`,
+          fields: [
+            {
+              name: "ROLED",
+              value: `[*] **${attackRoll}**${isCriticalStr}${isFailStr}`,
+              inline: true,
+            },
+          ],
+          footer: { text: "SYS.MNLT // NETWORK_SYNC" },
+        };
+
+        if (props.weaponType === "RANGED") {
+          if (isSuccess) {
+            combatEmbed.fields!.push({
+              name: "DANO PROJETADO",
+              value: `[!] **${finalDmg} PV**`,
+              inline: true,
+            });
+          } else {
+            combatEmbed.fields!.push({
+              name: "STATUS",
+              value: "[~] >> BALA PERDIDA <<",
+              inline: true,
+            });
+          }
+        } else {
+          if (isSuccess) {
+            combatEmbed.fields!.push({
+              name: "DANO PROJETADO",
+              value: `[!] **${finalDmg} PV**`,
+              inline: true,
+            });
+          } else {
+            combatEmbed.fields!.push({
+              name: "STATUS",
+              value: "[~] >> ATAQUE FALHO <<",
+              inline: true,
+            });
+          }
+        }
+
+        combatEmbed.fields!.push({
+          name: "LOG DE EXECUCAO",
+          value: `\`\`\`\n${rollLog}\n\`\`\``,
+          inline: false,
         });
-      }
-
-      const isCriticalStr = isCrit ? "\n> [!] CRITICO" : "";
-      const isFailStr = isFail ? "\n> [X] ERRO CRITICO" : "";
-
-      const combatEmbed: DiscordEmbed = {
-        title: `[>] ATAQUE ${props.weaponType === "RANGED" ? "A DISTANCIA" : "CORPO-A-CORPO"}`,
-        color: 16711680,
-        description: `**AGRESSOR:** ${name}\n**ALVO:** ${targetName}\n**ARMA:** ${item.name}\n**ALCANCE:** ${props.range}`,
-        fields: [
-          {
-            name: "ROLED",
-            value: `[*] **${attackRoll}**${isCriticalStr}${isFailStr}`,
-            inline: true,
-          },
-        ],
-        footer: { text: "SYS.MNLT // NETWORK_SYNC" },
-      };
-
-      if (props.weaponType === "RANGED") {
-        if (isSuccess) {
-          combatEmbed.fields!.push({
-            name: "DANO PROJETADO",
-            value: `[!] **${finalDmg} PV**`,
-            inline: true,
-          });
-        } else {
-          combatEmbed.fields!.push({
-            name: "STATUS",
-            value: "[~] >> BALA PERDIDA <<",
-            inline: true,
-          });
-        }
-      } else {
-        if (isSuccess) {
-          combatEmbed.fields!.push({
-            name: "DANO PROJETADO",
-            value: `[!] **${finalDmg} PV**`,
-            inline: true,
-          });
-        } else {
-          combatEmbed.fields!.push({
-            name: "STATUS",
-            value: "[~] >> ATAQUE FALHO <<",
-            inline: true,
-          });
-        }
-      }
-
-      combatEmbed.fields!.push({
-        name: "LOG DE EXECUCAO",
-        value: `\`\`\`\n${rollLog}\n\`\`\``,
-        inline: false,
+        dispatchDiscordLog("INVENTORY", name, "", [combatEmbed]);
+        RetroToast.success(`ATAQUE ENVIADO PARA: ${targetName}`);
       });
-      dispatchDiscordLog("INVENTORY", name, "", [combatEmbed]);
-      RetroToast.success(`ATAQUE ENVIADO PARA: ${targetName}`);
     };
 
     const handleWebhook = (e: React.MouseEvent) => {

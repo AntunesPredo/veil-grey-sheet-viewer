@@ -36,6 +36,10 @@ export function SkillDrawer() {
   const updateProgression = useCharacterStore(
     (state) => state.updateProgression,
   );
+  const { getTargetSum } = useActiveModifiers();
+
+  const freeSkillMod = getTargetSum("FREE_SKILL");
+  const effectiveFreePoints = freePoints.skills + freeSkillMod;
 
   const { initiateRoll } = useRoller();
   const { getSkillMod } = useActiveModifiers();
@@ -125,7 +129,7 @@ export function SkillDrawer() {
       return;
     }
 
-    if (delta > 0 && freePoints.skills <= 0) {
+    if (delta > 0 && effectiveFreePoints <= 0) {
       RetroToast.warning("PONTOS INSUFICIENTES.");
       return;
     }
@@ -133,7 +137,7 @@ export function SkillDrawer() {
     updateProgression({
       freePoints: {
         ...freePoints,
-        skills: freePoints.skills - delta,
+        skills: effectiveFreePoints - delta,
       },
     });
 
@@ -170,7 +174,7 @@ export function SkillDrawer() {
       : VG_CONFIG.rules.skillMin;
     const canReduce = sandboxMode || baseVal > minVal;
     const canIncrease =
-      sandboxMode || (freePoints.skills > 0 && baseVal < actualSkillCap);
+      sandboxMode || (effectiveFreePoints > 0 && baseVal < actualSkillCap);
 
     const isDescOpen = showAllDesc || !!descToggles[skillKey];
 
@@ -334,7 +338,7 @@ export function SkillDrawer() {
       {(isDistributing || sandboxMode) && (
         <div className="bg-[var(--theme-warning)]/10 border-b border-[var(--theme-warning)]/30 p-2 text-center shrink-0">
           <span className="text-[10px] font-bold tracking-widest text-[var(--theme-warning)] uppercase">
-            PONTOS LIVRES: {sandboxMode ? "[SANDBOX]" : freePoints.skills}
+            PONTOS LIVRES: {sandboxMode ? "[SANDBOX]" : effectiveFreePoints}
           </span>
         </div>
       )}

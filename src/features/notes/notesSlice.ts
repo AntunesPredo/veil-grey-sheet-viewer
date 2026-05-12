@@ -1,6 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { CharacterStore } from "../character/store";
-import type { Note } from "../../shared/types/veil-grey";
+import type { CustomEffect, Note } from "../../shared/types/veil-grey";
 
 export interface NotesSlice {
   notes: Note[];
@@ -14,6 +14,7 @@ export interface NotesSlice {
   deleteNote: (id: number) => void;
   toggleNoteEditMode: (id: number | "MAIN") => void;
   updateNoteHeight: (id: number | "MAIN", height: number) => void;
+  importExternalNote: (note: Note, effects: CustomEffect[]) => void;
 }
 
 export const createNotesSlice: StateCreator<
@@ -69,4 +70,19 @@ export const createNotesSlice: StateCreator<
         notes: state.notes.map((n) => (n.id === id ? { ...n, height } : n)),
       }));
   },
+  importExternalNote: (note, effects) =>
+    set((state) => {
+      const newNoteId = Date.now() + Math.random();
+      const newNote = { ...note, id: newNoteId, isEditing: false };
+      const newEffects = effects.map((e) => ({
+        ...e,
+        id: Date.now() + Math.random(),
+        link: newNoteId,
+      }));
+
+      return {
+        notes: [...state.notes, newNote],
+        customEffects: [...state.customEffects, ...newEffects],
+      };
+    }),
 });

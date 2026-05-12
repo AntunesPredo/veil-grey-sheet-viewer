@@ -48,22 +48,22 @@ export function VitalsResolutionModal() {
     const result = executeRawRoll(valToProcess || "0");
     if (result.error) return RetroToast.error(result.error);
 
-    const total = result.total;
-    setRolledAmount(total);
+    const absoluteTotal = Math.abs(result.total);
+    setRolledAmount(absoluteTotal);
 
     if (mode === "DAMAGE") {
       if (equippedArmor) {
         dispatchDiscordLog(
           "PLAYER",
           name,
-          `Dano total recebido: ${total}. Aguardando decisão de reduções balísticas.`,
+          `Dano total recebido: ${absoluteTotal}. Aguardando decisão de reduções balísticas.`,
         );
         setStep("MITIGATION");
       } else {
-        executeFinalTransaction("IGNORE", total);
+        executeFinalTransaction("IGNORE", absoluteTotal);
       }
     } else {
-      executeFinalTransaction("IGNORE", total);
+      executeFinalTransaction("IGNORE", absoluteTotal);
     }
   };
 

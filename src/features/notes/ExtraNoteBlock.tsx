@@ -5,6 +5,9 @@ import { Markdown } from "../../shared/ui/Markdown";
 import { EffectsList } from "../../shared/ui/EffectsList";
 import { useResizeObserver } from "../../shared/hooks/useResizeObserver";
 
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
+
 type ExtraNoteBlockProps = {
   note: Note;
   onDelete: () => void;
@@ -14,6 +17,7 @@ type ExtraNoteBlockProps = {
   effects: CustomEffect[];
   onRemoveEffect: (id: number) => void;
   updateHeight: (id: number | "MAIN", height: number) => void;
+  onSendNote: (note: Note) => void;
 };
 
 const crtVariants: Variants = {
@@ -39,6 +43,7 @@ export function ExtraNoteBlock({
   effects,
   onRemoveEffect,
   updateHeight,
+  onSendNote,
 }: ExtraNoteBlockProps) {
   const noteRef = useResizeObserver(note.id, updateHeight);
 
@@ -103,14 +108,26 @@ export function ExtraNoteBlock({
                 style={{ height: note.height || 80, minHeight: 60 }}
                 className="w-full bg-[var(--theme-background)]/80 border border-[var(--theme-accent)]/10 p-2 text-sm text-[var(--theme-accent)] font-mono outline-none resize-y custom-scrollbar"
               />
-              <Button
-                size="sm"
-                variant="primary"
-                className="border-dashed"
-                onClick={onAddEffect}
-              >
-                + ATRELAR EFEITO
-              </Button>
+              {isDev && (
+                <div className="flex gap-1 mt-2 border-t border-[var(--theme-accent)]/20 pt-2">
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    className="border-dashed"
+                    onClick={() => onSendNote(note)}
+                  >
+                    [ TRANSMITIR NOTA ]
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className="border-dashed"
+                    onClick={onAddEffect}
+                  >
+                    + ATRELAR EFEITO
+                  </Button>
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div

@@ -3,8 +3,14 @@ import { useCharacterStore } from "../character/store";
 import { Modal, ConfirmModal } from "../../shared/ui/Overlays";
 import { Button, Checkbox, Input } from "../../shared/ui/Form";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
-import { RetroToast } from "../../shared/ui/RetroToast";
 import { useImportData } from "../../shared/hooks/useImportData";
+import { RetroToast } from "../../shared/ui/RetroToast";
+import CryptoJS from "crypto-js";
+import { useSystemStore } from "../../shared/store/useSystemStore";
+import { Power } from "lucide-react";
+
+const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
 export function SettingsModal({
   isOpen,
@@ -13,6 +19,7 @@ export function SettingsModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const setPowerState = useSystemStore((state) => state.setPowerState);
   const settings = useCharacterStore((state) => state.settings);
   const sandboxMode = useCharacterStore((state) => state.sandboxMode);
   const name = useCharacterStore((state) => state.name);
@@ -35,9 +42,6 @@ export function SettingsModal({
     },
   });
 
-  const addXp = useCharacterStore((state) => state.addXp);
-
-  const [xpInput, setXpInput] = useState("");
   const wipeModal = useDisclosure();
   const errorModal = useDisclosure();
   const [confirmModalMessage, setConfirmModalMessage] = useState("");
@@ -52,23 +56,74 @@ export function SettingsModal({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const noSave = [resetCharacterData, importCharacterData];
 
-    console.log({ noSave });
+    const payload = {
+      vg_version: APP_VERSION,
+      timestamp: new Date().toISOString(),
+      data: dataToSave,
+    };
+
+    const encrypted = CryptoJS.AES.encrypt(
+      JSON.stringify(payload),
+      SECRET_KEY,
+    ).toString();
     const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(dataToSave, null, 2));
+      "data:text/plain;charset=utf-8," + encodeURIComponent(encrypted);
+
     const a = document.createElement("a");
     a.href = dataStr;
-    a.download = `VG_BACKUP_${name || "UNNAMED"}.json`;
+    a.download = `VG_SAVE_${name || "UNNAMED"}.vg`;
     a.click();
   };
 
-  const handleAddXp = () => {
-    const val = parseInt(xpInput);
-    if (!isNaN(val) && val > 0) {
-      addXp(val);
-      RetroToast.success(`+${val} XP.`);
-      setXpInput("");
-    }
+  const processJsonMigration = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    action: "ENCRYPT" | "DECRYPT",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        let outputStr = "";
+        let fileName = "";
+
+        if (action === "ENCRYPT") {
+          const rawData = JSON.parse(content);
+          const payload = {
+            vg_version: APP_VERSION,
+            timestamp: new Date().toISOString(),
+            data: rawData,
+          };
+          outputStr = CryptoJS.AES.encrypt(
+            JSON.stringify(payload),
+            SECRET_KEY,
+          ).toString();
+          fileName = "VG_MIGRATED_SAVE.json";
+        } else {
+          const bytes = CryptoJS.AES.decrypt(content, SECRET_KEY);
+          const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+          if (!decryptedStr)
+            throw new Error("Assinatura invalida ou chaves divergentes.");
+          const parsed = JSON.parse(decryptedStr);
+          outputStr = JSON.stringify(parsed, null, 2);
+          fileName = "VG_DECRYPTED_SAVE.json";
+        }
+
+        const dataUri =
+          "data:text/plain;charset=utf-8," + encodeURIComponent(outputStr);
+        const link = document.createElement("a");
+        link.href = dataUri;
+        link.download = fileName;
+        link.click();
+      } catch (err) {
+        RetroToast.error(
+          "Falha no parseamento do arquivo: " + (err as Error).message,
+        );
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -130,59 +185,77 @@ export function SettingsModal({
             </div>
           </div>
 
-          {(sandboxMode || isDev) && (
-            <div className="flex flex-col gap-2 p-2 bg-[var(--theme-warning)]/10 border-l-4 border-l-[var(--theme-warning)]">
-              <span className="text-[10px] font-bold text-[var(--theme-warning)] tracking-widest">
-                ADICIONAR XP
-              </span>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Quantidade XP..."
-                  value={xpInput}
-                  onChange={(e) => setXpInput(e.target.value)}
-                  className="flex-1 font-mono border-[var(--theme-warning)]/50 text-[var(--theme-warning)] focus:bg-[var(--theme-warning)]/20"
-                />
-                <Button
-                  size="sm"
-                  variant="warning"
-                  onClick={handleAddXp}
-                  className="px-4"
-                >
-                  ADICIONAR
-                </Button>
-              </div>
-            </div>
-          )}
-
           <div className="flex flex-col gap-3 p-3 bg-[var(--theme-danger)]/10 border-l-4 border-l-[var(--theme-danger)]">
             <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest">
               AREA DE RISCO
             </span>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                size="sm"
-                onClick={handleExportJSON}
-                className="border-dashed text-[var(--theme-accent)]"
-              >
-                EXPORTAR (.JSON)
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="border-dashed text-[var(--theme-accent)]"
-              >
-                IMPORTAR (.JSON)
-              </Button>
-              <input
-                type="file"
-                accept=".json"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleImportJSON}
-              />
-            </div>
+            {!sandboxMode ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleExportJSON}
+                  className="border-dashed text-[var(--theme-accent)]"
+                >
+                  EXPORTAR (.JSON)
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-dashed text-[var(--theme-accent)]"
+                >
+                  IMPORTAR (.JSON)
+                </Button>
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleImportJSON}
+                />
+              </div>
+            ) : null}
+
+            {isDev && (
+              <>
+                <div className="flex flex-row gap-4">
+                  <input
+                    type="file"
+                    accept=".json"
+                    id="decrypt-file"
+                    className="hidden"
+                    onChange={(e) => processJsonMigration(e, "DECRYPT")}
+                  />
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    className="w-full"
+                    onClick={() =>
+                      document.getElementById("decrypt-file")?.click()
+                    }
+                  >
+                    DESCRIPTOGRAFAR JSON
+                  </Button>
+                  <input
+                    type="file"
+                    accept=".json"
+                    id="encrypt-file"
+                    className="hidden"
+                    onChange={(e) => processJsonMigration(e, "ENCRYPT")}
+                  />
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    className="w-full"
+                    onClick={() =>
+                      document.getElementById("encrypt-file")?.click()
+                    }
+                  >
+                    CRIPTOGRAFAR JSON
+                  </Button>
+                </div>
+              </>
+            )}
 
             <Button
               size="sm"
@@ -191,6 +264,18 @@ export function SettingsModal({
               onClick={wipeModal.onOpen}
             >
               WIPE - DELETAR INFORMAÇÕES
+            </Button>
+          </div>
+          <div className="py-4 flex items-center w-full justify-center">
+            <Button
+              className="w-full flex justify-center gap-2 items-center text-[15px]"
+              onClick={() => {
+                onClose();
+                setPowerState("SHUTTING_DOWN");
+              }}
+            >
+              <Power style={{ strokeWidth: "3px" }} />
+              POWER OFF
             </Button>
           </div>
         </div>

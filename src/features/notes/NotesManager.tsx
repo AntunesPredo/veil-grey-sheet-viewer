@@ -10,6 +10,9 @@ import { ConfirmModal } from "../../shared/ui/Overlays";
 import { EffectsList } from "../../shared/ui/EffectsList";
 import { ExtraNoteBlock } from "./ExtraNoteBlock";
 import { useResizeObserver } from "../../shared/hooks/useResizeObserver";
+import { useNetworkStore } from "../../shared/store/useNetworkStore";
+import { TargetSelectionModal } from "../../shared/ui/TargetSelectionModal";
+import { RetroToast } from "../../shared/ui/RetroToast";
 
 const crtVariants: Variants = {
   hidden: { opacity: 0, clipPath: "inset(50% 0 50% 0)" },
@@ -44,6 +47,8 @@ export function NotesManager() {
     (state) => state.removeCustomEffect,
   );
   const updateNoteHeight = useCharacterStore((state) => state.updateNoteHeight);
+  const [noteToTransmit, setNoteToTransmit] = useState<Note | null>(null);
+  const sendPayload = useNetworkStore((state) => state.sendPayload);
 
   const effectModal = useDisclosure();
   const deleteModal = useDisclosure();
@@ -67,6 +72,24 @@ export function NotesManager() {
   const handleOpenDelete = (note: Note) => {
     setNoteToDelete(note);
     deleteModal.onOpen();
+  };
+
+  const handleSendNote = (targets: string[]) => {
+    if (!noteToTransmit) return;
+
+    const noteEffects = customEffects.filter(
+      (e) => e.link === noteToTransmit.id,
+    );
+
+    targets.forEach((target) => {
+      sendPayload(target, "NOTE", {
+        note: noteToTransmit,
+        effects: noteEffects,
+      });
+    });
+
+    setNoteToTransmit(null);
+    RetroToast.success("ARQUIVO DE NOTA TRANSMITIDO.");
   };
 
   return (
@@ -170,10 +193,17 @@ export function NotesManager() {
               }
               onRemoveEffect={removeCustomEffect}
               updateHeight={updateNoteHeight}
+              onSendNote={setNoteToTransmit}
             />
           ))}
         </AnimatePresence>
       </div>
+
+      <TargetSelectionModal
+        isOpen={!!noteToTransmit}
+        onClose={() => setNoteToTransmit(null)}
+        onSelect={handleSendNote}
+      />
 
       <CustomEffectModal
         isOpen={effectModal.isOpen}

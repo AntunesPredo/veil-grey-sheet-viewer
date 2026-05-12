@@ -22,6 +22,7 @@ interface NetworkState {
   sendPayload: (target: string, type: string, data: unknown) => void;
   pushToQueue: (payload: QueuedPayload) => void;
   popQueue: () => void;
+  disconnect: () => void;
 }
 
 export const useNetworkStore = create<NetworkState>((set, get) => ({
@@ -58,6 +59,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
+          RetroToast.success(`SYS.ONLINE | CONNECTED AS: [${playerName}]`);
           await channel.track({ online_at: new Date().toISOString() });
         }
       });
@@ -65,7 +67,29 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
     set({ channel });
   },
 
+  disconnect: () => {
+    const { channel } = get();
+    if (channel) {
+      channel.untrack();
+      channel.unsubscribe();
+      set({ channel: null, onlinePlayers: [] });
+    }
+  },
+
   sendPayload: (target, type, data) => {
+    const senderName = useCharacterStore.getState().name;
+
+    if (target === "SELF") {
+      get().pushToQueue({
+        id: crypto.randomUUID(),
+        type,
+        attackerName: senderName,
+        data,
+      });
+      RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
+      return;
+    }
+
     const { channel } = get();
     if (channel) {
       const senderName = useCharacterStore.getState().name;

@@ -4,6 +4,7 @@ import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { useVitalsStore } from "./useVitalsStore";
 import { Button } from "../../shared/ui/Form";
 import { motion, AnimatePresence } from "framer-motion";
+import { VG_CONFIG } from "../../shared/config/system.config";
 
 const injectedStyle = `
 .liquid-fill {
@@ -442,6 +443,32 @@ export function SustenanceWidget() {
               );
             })}
           </AnimatePresence>
+        </div>
+        <div className="flex flex-col border-t border-dashed border-[var(--theme-border)] text-[11px] font-mono uppercase">
+          <span className="py-2 text-center w-full font-bold text-[14px] text-[var(--theme-accent)] tracking-widest">
+            INFORMES NUTRICIONAIS:
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col flex-1 gap-1 border-l-2 border-[var(--theme-success)] bg-[var(--theme-success)]/10 p-2">
+              <span className="font-bold text-[var(--theme-success)]">
+                NUTRIÇÃO POSITIVA
+              </span>
+              <span className="text-[var(--theme-text)]/70">
+                CADA PONTO EXCEDENTE CONVERTE CON/2 EM HP TEMP (MÁXIMO DE CON*
+                {VG_CONFIG.rules.constitutionTempHpMultiPerNutricion}).
+              </span>
+            </div>
+            <div className="flex flex-col flex-1 gap-1 border-l-2 border-[var(--theme-warning)] bg-[var(--theme-warning)]/10 p-2">
+              <span className="font-bold text-[var(--theme-warning)]">
+                NUTRIÇÃO NEGATIVA
+              </span>
+              <span className="text-[var(--theme-text)]/70">
+                CADA PONTO DE DÉFICIT APLICA{" "}
+                {VG_CONFIG.rules.starvationHpDamagePerPoint} PV DE DANO
+                ESTRUTURAL.
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="md:hidden flex justify-center mt-2 pb-2 px-2 z-20">

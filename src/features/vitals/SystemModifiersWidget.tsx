@@ -5,8 +5,16 @@ import { useCharacterStore } from "../character/store";
 import { EffectsList } from "../../shared/ui/EffectsList";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 import { motion } from "framer-motion";
+import {
+  dispatchDiscordLog,
+  type DiscordEmbed,
+} from "../../shared/utils/discordWebhook";
+
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 export function SystemModifiersWidget() {
+  const name = useCharacterStore((state) => state.name);
   const removeCustomEffect = useCharacterStore(
     (state) => state.removeCustomEffect,
   );
@@ -31,6 +39,15 @@ export function SystemModifiersWidget() {
 
   const handleRemove = (id: number, link: string | number | null) => {
     if (typeof link === "string" && link.startsWith("item_")) return;
+    const effect = activeEffects.find((e) => e.id === id);
+    if (!effect) return;
+
+    const effectEmbed: DiscordEmbed = {
+      title: `>>> [${name}] REMOVEU UM EFEITO`,
+      color: 3447003,
+      description: `**TYPE:** ${effect.mode}\n**TARGET:** ${effect.target}\n**MOD.:** ${effect.val > 0 ? `+${effect.val}` : effect.val}\n**DESC:** ${effect.description}`,
+    };
+    dispatchDiscordLog("PLAYER", name, "", [effectEmbed]);
     removeCustomEffect(id);
   };
 
@@ -74,14 +91,16 @@ export function SystemModifiersWidget() {
             <span className="w-2 h-2 rounded-full bg-[var(--theme-warning)] animate-ping" />
             EFEITOS TEMPORÁRIOS
           </span>
-          <Button
-            size="sm"
-            variant="warning"
-            onClick={tempModal.onOpen}
-            className="px-2 py-0.5 text-[9px] border-dashed"
-          >
-            + NOVO TEMP
-          </Button>
+          {isDev && (
+            <Button
+              size="sm"
+              variant="warning"
+              onClick={tempModal.onOpen}
+              className="px-2 py-0.5 text-[9px] border-dashed"
+            >
+              + NOVO TEMP
+            </Button>
+          )}
         </div>
         <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
           {tempEffects.length > 0 ? (
@@ -109,13 +128,15 @@ export function SystemModifiersWidget() {
           <span className="text-[10px] font-bold text-[var(--theme-text)]/70 tracking-widest uppercase">
             MODIFICADORES PASSIVOS / EQUIPAMENTOS
           </span>
-          <Button
-            size="sm"
-            onClick={globalModal.onOpen}
-            className="px-2 py-0.5 text-[9px] border-dashed"
-          >
-            + NOVO FIXO
-          </Button>
+          {isDev && (
+            <Button
+              size="sm"
+              onClick={globalModal.onOpen}
+              className="px-2 py-0.5 text-[9px] border-dashed"
+            >
+              + NOVO FIXO
+            </Button>
+          )}
         </div>
         <div className="max-h-[150px] overflow-y-auto custom-scrollbar">
           {globalEffects.length > 0 ? (

@@ -98,7 +98,7 @@ export function DisadvantagesScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-7xl mx-auto p-2 md:p-6 gap-4 bg-[var(--theme-background)] border-x-2 border-[var(--theme-danger)]">
+    <div className="flex flex-col h-full w-full max-w-7xl mx-auto p-2 md:p-6 gap-4 border-x-2 border-[var(--theme-danger)]">
       <div className="border-b-2 border-[var(--theme-danger)] pb-2 shrink-0 flex flex-col md:flex-row justify-between items-start md:items-end">
         <div className="flex flex-col">
           <h1 className="text-2xl md:text-3xl font-black font-mono tracking-widest text-[var(--theme-danger)] uppercase glow-danger">
@@ -156,12 +156,19 @@ export function DisadvantagesScreen() {
                         <span className="text-[9px] font-mono text-[var(--theme-text)]/60 leading-tight uppercase mt-1">
                           {item.description}
                         </span>
-                        {item.effects.length > 0 && (
-                          <div className="mt-2 text-[9px] font-mono font-bold text-[var(--theme-danger)] uppercase border-t border-dashed border-[var(--theme-danger)]/30 pt-1">
-                            &gt; OVERRIDE: {item.effects[0].description} (
-                            {item.effects[0].val})
-                          </div>
-                        )}
+                        {item.effects.length > 0 &&
+                          item.effects.map((e) => {
+                            const isPositive = e.val > 0;
+                            return (
+                              <div
+                                className={`mt-2 text-[9px] font-mono font-bold ${isPositive ? "text-[var(--theme-success)]" : "text-[var(--theme-danger)]"} uppercase border-t border-dashed border-[var(--theme-danger)]/30 pt-1`}
+                              >
+                                &gt; [{e.mode}] TARGET: {e.target} (
+                                {isPositive ? "+" : ""}
+                                {e.val})
+                              </div>
+                            );
+                          })}
                       </div>
                     ))}
                   </div>
@@ -191,7 +198,7 @@ export function DisadvantagesScreen() {
           })}
         </div>
 
-        <div className="w-full md:w-[380px] shrink-0 flex flex-col gap-4">
+        <div className="w-full md:w-[380px] shrink-0 flex flex-col gap-4 md:h-auto md:overflow-y-auto custom-scrollbar scroll-left">
           <div className="border-2 border-[var(--theme-border)] bg-black p-3 flex flex-col gap-3">
             <span className="text-[11px] font-black font-mono text-[var(--theme-accent)] tracking-widest uppercase border-b-2 border-[var(--theme-border)] pb-2 mb-1">
               BÔNUS DE COMBO

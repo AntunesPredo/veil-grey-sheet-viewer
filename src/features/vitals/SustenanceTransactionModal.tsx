@@ -9,6 +9,7 @@ import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { VG_CONFIG } from "../../shared/config/system.config";
+import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
 
 export function SustenanceTransactionModal() {
   const {
@@ -19,7 +20,7 @@ export function SustenanceTransactionModal() {
     setSustenanceInputValue,
     closeSustenanceModal,
   } = useVitalsStore();
-
+  const { getTargetSum } = useActiveModifiers();
   const name = useCharacterStore((state) => state.name);
   const sustenance = useCharacterStore((state) => state.sustenance);
   const attributes = useCharacterStore((state) => state.attributes);
@@ -56,12 +57,17 @@ export function SustenanceTransactionModal() {
     const result = executeRawRoll(valToProcess);
     if (result.error) return RetroToast.error(result.error);
 
-    setRolledAmount(result.total);
+    const absoluteTotal = Math.abs(result.total);
+    setRolledAmount(absoluteTotal);
     setStep("CONFIRM");
   };
 
   const handleConfirm = () => {
     let logModifiers = "";
+    const effectiveCon = Math.max(
+      0,
+      (attributes.constitution || 0) + getTargetSum("constitution"),
+    );
 
     if (isOverweight) {
       logModifiers += isSub
@@ -83,10 +89,16 @@ export function SustenanceTransactionModal() {
     } else if (newSustenance > maxSustenance) {
       const excess = newSustenance - maxSustenance;
       const tempPerPoint = Math.max(1, Math.floor(attributes.constitution / 2));
-      tempHpAdded = Math.min(
-        excess * tempPerPoint,
-        attributes.constitution * 2,
+
+      const globalMaxTempHp = Math.max(
+        0,
+        effectiveCon * VG_CONFIG.rules.constitutionTempHpMultiPerNutricion,
       );
+      const avaliableTempSpace = Math.max(0, globalMaxTempHp - hp.temp);
+
+      const intendedTempHp = excess * tempPerPoint;
+
+      tempHpAdded = Math.min(intendedTempHp, avaliableTempSpace);
       newSustenance = maxSustenance;
     }
 

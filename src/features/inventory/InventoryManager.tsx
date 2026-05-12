@@ -10,7 +10,10 @@ import {
 import { useCharacterStore } from "../character/store";
 import { useDisclosure } from "../../shared/hooks/useDisclosure";
 import type { Item } from "../../shared/types/veil-grey";
-import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
+import {
+  dispatchDiscordLog,
+  type DiscordEmbed,
+} from "../../shared/utils/discordWebhook";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { ConfirmModal, FocusOverlay } from "../../shared/ui/Overlays";
 import { Button } from "../../shared/ui/Form";
@@ -58,9 +61,65 @@ export function InventoryManager({
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [activeDragId, setActiveDragId] = useState<number | null>(null);
+  const [invSnapshot, setInvSnapshot] = useState<Item[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const toggleEditMode = () => setIsEditMode(!isEditMode);
+  const toggleEditMode = () => {
+    if (isEditMode) {
+      const stored = inventory.filter(
+        (i) =>
+          !i.isCarried &&
+          invSnapshot.find((snap) => snap.id === i.id && snap.isCarried),
+      );
+      const taken = inventory.filter(
+        (i) =>
+          i.isCarried &&
+          invSnapshot.find((snap) => snap.id === i.id && !snap.isCarried),
+      );
+
+      if (stored.length > 0 || taken.length > 0) {
+        const embed: DiscordEmbed = {
+          title: "[>] ATUALIZACAO LOGISTICA DE INVENTARIO",
+          color: 10181046,
+          description: `**UNIDADE OPERACIONAL:** ${name}`,
+          fields: [],
+          footer: { text: "SYS.MNLT // LOGISTIC_TRACKER" },
+          timestamp: new Date().toISOString(),
+        };
+
+        if (stored.length > 0) {
+          embed.fields!.push({
+            name: "ITENS ARMAZENADOS NA BASE",
+            value: stored
+              .map(
+                (i) =>
+                  `\`[${i.slots * i.quantity} SLOTS]\` **${i.name}** (Qtd: ${i.quantity})`,
+              )
+              .join("\n"),
+            inline: false,
+          });
+        }
+
+        if (taken.length > 0) {
+          embed.fields!.push({
+            name: "ITENS RETIRADOS PARA OPERACAO",
+            value: taken
+              .map(
+                (i) =>
+                  `\`[${i.slots * i.quantity} SLOTS]\` **${i.name}** (Qtd: ${i.quantity})`,
+              )
+              .join("\n"),
+            inline: false,
+          });
+        }
+
+        dispatchDiscordLog("INVENTORY", name, "", [embed]);
+      }
+    } else {
+      setInvSnapshot([...inventory]);
+    }
+    setIsEditMode(!isEditMode);
+  };
 
   const handleWebhookAll = () => {
     const cLoad = currentLoad ?? 0;
@@ -301,7 +360,15 @@ export function InventoryManager({
             </div>
           }
           onConfirm={() => {
-            if (selectedItem) deleteInventoryItem(selectedItem.id);
+            if (selectedItem) {
+              const deleteEmbed: DiscordEmbed = {
+                title: `[>>>] ITEM DELETADO [<<<]`,
+                color: 10038562,
+                description: `**NOME:** ${selectedItem.name}\n**QUANTIDADE:** ${selectedItem.quantity}\n**TYPE.:** ${selectedItem.type}\n**DESC:** ${selectedItem.description}`,
+              };
+              dispatchDiscordLog("PLAYER", name, "", [deleteEmbed]);
+              deleteInventoryItem(selectedItem.id);
+            }
             deleteModal.onClose();
           }}
         />

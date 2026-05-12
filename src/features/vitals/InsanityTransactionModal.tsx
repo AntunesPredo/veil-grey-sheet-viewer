@@ -49,7 +49,8 @@ export function InsanityTransactionModal() {
     const result = executeRawRoll(valToProcess);
     if (result.error) return RetroToast.error(result.error);
 
-    setRolledAmount(result.total);
+    const absoluteTotal = Math.abs(result.total);
+    setRolledAmount(absoluteTotal);
     setStep("CONFIRM");
   };
 

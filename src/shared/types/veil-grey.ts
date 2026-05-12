@@ -57,6 +57,7 @@ export type CustomEffectTarget =
   | "FREE_SKILL"
   | "HP"
   | "INSANITY"
+  | "SUSTENANCE"
   | "MOVEMENT"
   | "ACTION_POINTS"
   | "REACTIONS"

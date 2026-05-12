@@ -24,6 +24,10 @@ export function AttributeDrawer() {
   const updateProgression = useCharacterStore(
     (state) => state.updateProgression,
   );
+  const { getTargetSum } = useActiveModifiers();
+
+  const freeAttrMod = getTargetSum("FREE_ATTR");
+  const effectiveFreePoints = freePoints.attributes + freeAttrMod;
 
   const { getAttrMod } = useActiveModifiers();
   const { secondaryAttributes } = useCharacterStats();
@@ -81,7 +85,7 @@ export function AttributeDrawer() {
       return;
     }
 
-    if (delta > 0 && freePoints.attributes <= 0) {
+    if (delta > 0 && effectiveFreePoints <= 0) {
       RetroToast.warning("PONTOS INSUFICIENTES.");
       return;
     }
@@ -89,7 +93,7 @@ export function AttributeDrawer() {
     updateProgression({
       freePoints: {
         ...freePoints,
-        attributes: freePoints.attributes - delta,
+        attributes: effectiveFreePoints - delta,
       },
     });
 
@@ -129,7 +133,7 @@ export function AttributeDrawer() {
       {(isDistributing || sandboxMode) && (
         <div className="bg-[var(--theme-warning)]/10 border-b border-[var(--theme-warning)]/30 p-2 text-center shrink-0">
           <span className="text-[10px] font-bold tracking-widest text-[var(--theme-warning)] uppercase">
-            PONTOS LIVRES: {sandboxMode ? "[SANDBOX]" : freePoints.attributes}
+            PONTOS LIVRES: {sandboxMode ? "[SANDBOX]" : effectiveFreePoints}
           </span>
         </div>
       )}
@@ -157,7 +161,7 @@ export function AttributeDrawer() {
                 const canReduce = sandboxMode || baseVal > minVal;
                 const canIncrease =
                   sandboxMode ||
-                  (freePoints.attributes > 0 &&
+                  (effectiveFreePoints > 0 &&
                     baseVal < currentTier.maxAttr &&
                     baseVal < VG_CONFIG.rules.attrMax);
 

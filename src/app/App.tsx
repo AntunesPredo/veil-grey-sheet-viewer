@@ -95,10 +95,12 @@ export default function App() {
   } as React.CSSProperties;
 
   useEffect(() => {
-    if (powerState === "ONLINE" && name) {
+    if (powerState === "ONLINE" && name && creationStatus === "CLOSED") {
       connectNetwork(name);
+    } else {
+      useNetworkStore.getState().disconnect?.();
     }
-  }, [powerState, name, connectNetwork]);
+  }, [powerState, name, creationStatus, connectNetwork]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -113,13 +115,14 @@ export default function App() {
     }
   }, [setPendingInjection]);
 
-  // useEffect(() => {
-  //   let timer: ReturnType<typeof setTimeout>;
-  //    if (powerState === "SHUTTING_DOWN") {
-  //     timer = setTimeout(() => setPowerState("STANDBY"), 800);
-  //   }
-  //   return () => clearTimeout(timer);
-  // }, [powerState, setPowerState]);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (powerState === "SHUTTING_DOWN") {
+      useNetworkStore.getState().disconnect?.();
+      timer = setTimeout(() => setPowerState("STANDBY"), 800);
+    }
+    return () => clearTimeout(timer);
+  }, [powerState, setPowerState]);
 
   useEffect(() => {
     if (inDev) return;
