@@ -31,8 +31,14 @@ export function ItemDetails({ item, inheritedEffects = [] }: ItemDetailsProps) {
         </span>
       )}
 
+      {(item as { commsType: string }).commsType && (
+        <span className="text-[9px] bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] border border-[var(--theme-warning)]/30 px-2 py-1 w-fit font-bold tracking-widest">
+          TYPE: {(item as { commsType: string }).commsType}
+        </span>
+      )}
+
       {item.description && (
-        <span className="text-[10px] text-[var(--theme-text)]/80 italic leading-relaxed border-l-2 border-[var(--theme-accent)]/30 pl-2">
+        <span className="text-[10px] text-[var(--theme-text)]/80 italic leading-relaxed border-l-2 border-[var(--theme-accent)]/30 pl-2 whitespace-pre-wrap">
           {item.description}
         </span>
       )}
