@@ -59,11 +59,11 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          RetroToast.success(`SYS.ONLINE | CONNECTED AS: [${playerName}]`);
           await channel.track({ online_at: new Date().toISOString() });
         }
       });
 
+    RetroToast.success(`SYS.ONLINE | CONNECTED AS: [${playerName}]`);
     set({ channel });
   },
 

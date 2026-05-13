@@ -72,7 +72,7 @@ export function SettingsModal({
 
     const a = document.createElement("a");
     a.href = dataStr;
-    a.download = `VG_SAVE_${name || "UNNAMED"}.vg`;
+    a.download = `VG_SAVE_${name || "UNNAMED"}.json`;
     a.click();
   };
 

@@ -172,14 +172,14 @@ input {
 
 @keyframes crtFlicker {
   0% {
-    opacity: 0.45;
+    opacity: 0.25;
     transform: translateX(1px);
   }
   50% {
     opacity: 0.35;
   }
   100% {
-    opacity: 0.45;
+    opacity: 0.25;
     transform: translateX(0px);
   }
 }

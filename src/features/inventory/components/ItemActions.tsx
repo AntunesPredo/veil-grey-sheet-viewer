@@ -103,6 +103,42 @@ export function ItemActions({
         </div>
       )} */}
 
+      {item.type === "EQUIPABLE" && item.armorProps && (
+        <div className="flex flex-col w-full gap-1">
+          <span className="text-[12px] font-bold border-b border-dashed mb-2 pb-2 text-[var(--theme-warning)] text-center uppercase tracking-widest">
+            INTEGRIDADE
+          </span>
+          <div className="w-full h-2 bg-[var(--theme-background)] border border-[var(--theme-border)]">
+            <div
+              className="h-full bg-[var(--theme-warning)] shadow-[0_0_5px_var(--theme-warning)] transition-all"
+              style={{
+                width: `${Math.min((item.armorProps.pe / item.armorProps.maxPe) * 100, 100)}%`,
+              }}
+            />
+          </div>
+          {!isNestedAmmo && (
+            <div className="flex gap-2 mt-1">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={repairModal.onOpen}
+                className="flex-1 border-dashed text-[10px]"
+              >
+                CONSERTAR
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled
+                className="flex-1 border-dashed text-[10px] px-2"
+              >
+                DANIFICAR
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {hasUses && item.type === "ACTIVE" && (
         <div className="flex flex-col w-full gap-1">
           <span className="text-[12px] font-bold border-b border-dashed mb-2 pb-2 text-[var(--theme-warning)] text-center uppercase tracking-widest">
@@ -197,7 +233,7 @@ export function ItemActions({
                       size="sm"
                       variant="warning"
                       onClick={onUse}
-                      className="h-5 px-2 text-[8px] border-dashed"
+                      className="px-2 text-[8px] border-dashed"
                     >
                       USAR
                     </Button>

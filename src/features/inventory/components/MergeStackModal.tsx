@@ -95,7 +95,7 @@ export function MergeStackModal({
                 className={`flex items-center justify-between p-2 border ${selectedIds.includes(item.id) ? "bg-[var(--theme-accent)]/10 border-[var(--theme-accent)]" : "bg-[var(--theme-background)] border-[var(--theme-border)]"}`}
               >
                 <Checkbox
-                  label={`[QTD: ${item.quantity}] ${item.drawer ? `(GAVETA: ${item.drawer})` : "(GERAL)"}`}
+                  label={`[QTD: ${item.quantity}] ${"maxUses" in item && "uses" in item && item.quantity === 1 ? `| [USES: ${item.uses}/${item.maxUses}]` : ""} | LOCATE: ${item.drawer ? `/GAVETA: /${item.drawer}` : "/GERAL"}`}
                   checked={selectedIds.includes(item.id)}
                   onChange={() => handleToggle(item.id)}
                 />

@@ -70,18 +70,22 @@ export function ChargeConfig({
             <Input
               type="number"
               min="0"
-              max={formData.maxUses}
+              max={isConsumable ? undefined : formData.maxUses}
               value={
                 formData.fullCharge && !isConsumable
                   ? formData.maxUses
                   : formData.uses
               }
-              onChange={(e) =>
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value) || 0;
                 setFormData((prev) => ({
                   ...prev,
-                  uses: Math.min(parseInt(e.target.value) || 0, prev.maxUses),
-                }))
-              }
+                  uses: isConsumable
+                    ? newValue
+                    : Math.min(newValue, prev.maxUses),
+                  maxUses: isConsumable ? Math.max(1, newValue) : prev.maxUses,
+                }));
+              }}
               className="text-center font-mono border-[var(--theme-warning)]/50 text-[var(--theme-warning)]"
             />
           </div>

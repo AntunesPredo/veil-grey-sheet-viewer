@@ -143,7 +143,7 @@ export function ItemHeader({
               )}
             </div>
           </div>
-          {!isEditMode && isEquippable && (
+          {isEditMode && isEquippable && (
             <Button
               size="sm"
               onClick={onToggleEquip}

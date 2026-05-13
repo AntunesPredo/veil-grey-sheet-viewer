@@ -245,7 +245,10 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
             slots: 0,
             quantity: initialUses,
             type: "CONSUMABLE",
-            svgId: finalItem.type === "KIT" ? "cons_pill" : "cons_ammo",
+            svgId:
+              finalItem.type === "KIT"
+                ? "consumable_energy"
+                : "consumable_bullet_1",
             uses: 1,
             maxUses: 1,
             commsType: finalItem.commsType,

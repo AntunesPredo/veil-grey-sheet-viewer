@@ -8,6 +8,8 @@ import type {
   EquipableItem,
   InstantAction,
   Item,
+  KitItem,
+  RechargeableItem,
 } from "../../shared/types/veil-grey";
 
 export interface InventorySlice {
@@ -301,10 +303,15 @@ export const createInventorySlice: StateCreator<
 
   splitInventoryItem: (id, mode, divisor) => {
     set((state) => {
-      const item = state.inventory.find((i) => i.id === id);
-      if (!item || item.quantity <= 1 || divisor <= 0) return state;
+      const itemIndex = state.inventory.findIndex((i) => i.id === id);
+      if (itemIndex === -1) return state;
+
+      const item = state.inventory[itemIndex];
+      if (item.quantity <= 1 || divisor <= 0) return state;
+
       const newItems: Item[] = [];
       let remainingQty = item.quantity;
+
       if (mode === "SINGLE") {
         if (divisor >= remainingQty) return state;
         remainingQty -= divisor;
@@ -312,62 +319,132 @@ export const createInventorySlice: StateCreator<
           ...item,
           id: Date.now() + Math.random(),
           quantity: divisor,
-        });
+        } as Item);
       } else if (mode === "TOTAL") {
         const sizePerStack = Math.floor(remainingQty / divisor);
         if (sizePerStack <= 0) return state;
+
         const remainder = remainingQty % divisor;
         remainingQty = sizePerStack + remainder;
+
         for (let i = 1; i < divisor; i++) {
           newItems.push({
             ...item,
             id: Date.now() + i,
             quantity: sizePerStack,
-          });
+          } as Item);
         }
       }
-      return {
-        inventory: state.inventory
-          .map((i) => (i.id === id ? { ...i, quantity: remainingQty } : i))
-          .concat(newItems),
-      };
+
+      const newInventory = [...state.inventory];
+      newInventory[itemIndex] = { ...item, quantity: remainingQty };
+      newInventory.splice(itemIndex + 1, 0, ...newItems);
+
+      return { inventory: newInventory };
     });
   },
 
-  mergeInventoryItems: (targetId, sourceIds) => {
+  mergeInventoryItems: (targetId: number, sourceIds: number[]) => {
     set((state) => {
-      const target = state.inventory.find((i) => i.id === targetId);
-      if (!target) return state;
-      let extraQty = 0;
-      let newDesc = target.description;
+      const targetIndex = state.inventory.findIndex((i) => i.id === targetId);
+      if (targetIndex === -1) return state;
+
+      const target = state.inventory[targetIndex];
       const itemsToRemove = new Set(sourceIds);
-      state.inventory.forEach((src) => {
-        if (itemsToRemove.has(src.id)) {
-          extraQty += src.quantity;
-          if (
-            src.description &&
-            src.description !== target.description &&
-            !newDesc.includes(src.description)
-          ) {
-            newDesc += newDesc
-              ? `\n[M. FUSÃO]: ${src.description}`
-              : src.description;
-          }
+
+      const validSources = state.inventory.filter((i) =>
+        itemsToRemove.has(i.id),
+      );
+      if (validSources.length === 0) return state;
+
+      let newDesc = target.description || "";
+
+      validSources.forEach((src) => {
+        if (
+          src.description &&
+          src.description !== target.description &&
+          !newDesc.includes(src.description)
+        ) {
+          newDesc += newDesc
+            ? `\n[M. FUSÃO]: ${src.description}`
+            : src.description;
         }
       });
-      return {
-        inventory: state.inventory
-          .filter((i) => !itemsToRemove.has(i.id))
-          .map((i) =>
-            i.id === targetId
-              ? {
-                  ...i,
-                  quantity: i.quantity + extraQty,
-                  description: newDesc.trim(),
-                }
-              : i,
-          ),
-      };
+
+      const isPoolable =
+        "uses" in target && "maxUses" in target && target.type !== "ACTIVE";
+
+      if (isPoolable) {
+        const maxUses = (target as { maxUses: number }).maxUses;
+
+        let totalUsesPool = (target as { uses: number }).uses * target.quantity;
+        validSources.forEach((src) => {
+          totalUsesPool += (src as { uses: number }).uses * src.quantity;
+        });
+
+        const fullQty = Math.floor(totalUsesPool / maxUses);
+        const remainderUses = totalUsesPool % maxUses;
+
+        const nextInventory = state.inventory.filter(
+          (i) => !itemsToRemove.has(i.id),
+        );
+        const newTargetIndex = nextInventory.findIndex(
+          (i) => i.id === targetId,
+        );
+
+        if (fullQty > 0 && remainderUses > 0) {
+          nextInventory[newTargetIndex] = {
+            ...target,
+            quantity: fullQty,
+            uses: maxUses,
+            description: newDesc.trim(),
+          };
+
+          const remainderItem = {
+            ...target,
+            id: Date.now() + Math.random(),
+            quantity: 1,
+            uses: remainderUses,
+            description: newDesc.trim(),
+          };
+          nextInventory.splice(newTargetIndex + 1, 0, remainderItem as Item);
+        } else if (fullQty > 0 && remainderUses === 0) {
+          nextInventory[newTargetIndex] = {
+            ...target,
+            quantity: fullQty,
+            uses: maxUses,
+            description: newDesc.trim(),
+          };
+        } else if (fullQty === 0 && remainderUses > 0) {
+          nextInventory[newTargetIndex] = {
+            ...target,
+            quantity: 1,
+            uses: remainderUses,
+            description: newDesc.trim(),
+          };
+        }
+
+        return { inventory: nextInventory };
+      } else {
+        let extraQty = 0;
+        validSources.forEach((src) => {
+          extraQty += src.quantity;
+        });
+
+        return {
+          inventory: state.inventory
+            .filter((i) => !itemsToRemove.has(i.id))
+            .map((i) =>
+              i.id === targetId
+                ? {
+                    ...i,
+                    quantity: i.quantity + extraQty,
+                    description: newDesc.trim(),
+                  }
+                : i,
+            ),
+        };
+      }
     });
   },
 
@@ -420,6 +497,7 @@ export const createInventorySlice: StateCreator<
 
     set((state) => {
       const item = state.inventory.find((i) => i.id === id);
+
       if (!item || !("uses" in item)) {
         result = { success: false, message: "ITEM INVÁLIDO." };
         return state;
@@ -444,6 +522,61 @@ export const createInventorySlice: StateCreator<
         consumedActions.push(...item.instantActions);
       }
 
+      type ItemWithUses =
+        | ConsumableItem
+        | RechargeableItem
+        | ActiveItem
+        | KitItem;
+
+      const deductCharge = (
+        targetItem: ItemWithUses,
+        currentInventory: Item[],
+      ): Item[] => {
+        const currentUses = targetItem.uses;
+        const currentQty = targetItem.quantity;
+
+        if (currentUses > 1) {
+          if (currentQty > 1) {
+            const newItem = {
+              ...targetItem,
+              id: Date.now() + Math.random(),
+              quantity: 1,
+              uses: currentUses - 1,
+            };
+
+            const itemIndex = currentInventory.findIndex(
+              (i) => i.id === targetItem.id,
+            );
+            const nextInventory = [...currentInventory];
+
+            nextInventory[itemIndex] = {
+              ...targetItem,
+              quantity: currentQty - 1,
+            };
+            nextInventory.splice(itemIndex + 1, 0, newItem as Item);
+
+            return nextInventory;
+          } else {
+            return currentInventory.map((i) =>
+              i.id === targetItem.id ? { ...i, uses: currentUses - 1 } : i,
+            );
+          }
+        } else {
+          if (currentQty > 1) {
+            return currentInventory.map((i) =>
+              i.id === targetItem.id ? { ...i, quantity: currentQty - 1 } : i,
+            );
+          } else {
+            if (targetItem.type === "KIT") {
+              return currentInventory.map((i) =>
+                i.id === targetItem.id ? { ...i, uses: 0 } : i,
+              );
+            }
+            return currentInventory.filter((i) => i.id !== targetItem.id);
+          }
+        }
+      };
+
       if (item.type === "ACTIVE") {
         const activeItem = item as ActiveItem;
 
@@ -461,7 +594,7 @@ export const createInventorySlice: StateCreator<
           );
 
           let validAmmos = directChildren.filter(
-            (i) => i.type === "CONSUMABLE" && i.uses > 0,
+            (i) => i.type === "CONSUMABLE" && (i as ConsumableItem).uses > 0,
           );
 
           const rechargeables = directChildren.filter(
@@ -470,7 +603,9 @@ export const createInventorySlice: StateCreator<
           rechargeables.forEach((mag) => {
             const magAmmo = state.inventory.filter(
               (i) =>
-                i.parentId === mag.id && i.type === "CONSUMABLE" && i.uses > 0,
+                i.parentId === mag.id &&
+                i.type === "CONSUMABLE" &&
+                (i as ConsumableItem).uses > 0,
             );
             validAmmos = validAmmos.concat(magAmmo);
           });
@@ -484,13 +619,10 @@ export const createInventorySlice: StateCreator<
           }
 
           const ammo = validAmmos.sort((a, b) => {
-            if ("uses" in a && "uses" in b) {
-              const au = a.uses;
-              const bu = b.uses;
-              if (au !== bu) return au - bu;
-              return a.quantity - b.quantity;
-            }
-            return 0;
+            const itemA = a as ConsumableItem;
+            const itemB = b as ConsumableItem;
+            if (itemA.uses !== itemB.uses) return itemA.uses - itemB.uses;
+            return itemA.quantity - itemB.quantity;
           })[0] as ConsumableItem;
 
           ammoBonusDamage = ammo.bonusDamage || 0;
@@ -511,33 +643,7 @@ export const createInventorySlice: StateCreator<
             consumedActions.push(...ammo.instantActions);
           }
 
-          if (ammo.quantity > 1) {
-            if (ammo.uses > 1) {
-              const newAmmo = {
-                ...ammo,
-                id: Date.now() + Math.random(),
-                quantity: 1,
-                uses: ammo.uses - 1,
-              };
-              newInventory = newInventory
-                .map((i) =>
-                  i.id === ammo.id ? { ...i, quantity: i.quantity - 1 } : i,
-                )
-                .concat(newAmmo as Item);
-            } else {
-              newInventory = newInventory.map((i) =>
-                i.id === ammo.id ? { ...i, quantity: i.quantity - 1 } : i,
-              );
-            }
-          } else {
-            if (ammo.uses > 1) {
-              newInventory = newInventory.map((i) =>
-                i.id === ammo.id ? { ...i, uses: ammo.uses - 1 } : i,
-              );
-            } else {
-              newInventory = newInventory.filter((i) => i.id !== ammo.id);
-            }
-          }
+          newInventory = deductCharge(ammo, newInventory);
         }
 
         const loss = Math.floor(Math.random() * (85 - 15 + 1)) + 15;
@@ -556,40 +662,7 @@ export const createInventorySlice: StateCreator<
           i.id === activeItem.id ? { ...i, uses: newUses } : i,
         );
       } else {
-        const currentUses = item.uses;
-        if (item.quantity > 1) {
-          if (currentUses > 1) {
-            const newItem = {
-              ...item,
-              id: Date.now() + Math.random(),
-              quantity: 1,
-              uses: currentUses - 1,
-            };
-            newInventory = state.inventory
-              .map((i) =>
-                i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
-              )
-              .concat(newItem as Item);
-          } else {
-            newInventory = state.inventory.map((i) =>
-              i.id === id ? { ...i, quantity: i.quantity - 1 } : i,
-            );
-          }
-        } else {
-          if (currentUses > 1) {
-            newInventory = state.inventory.map((i) =>
-              i.id === id ? { ...i, uses: currentUses - 1 } : i,
-            );
-          } else {
-            if (item.type === "KIT") {
-              newInventory = state.inventory.map((i) =>
-                i.id === id ? { ...i, uses: 0 } : i,
-              );
-            } else {
-              newInventory = state.inventory.filter((i) => i.id !== id);
-            }
-          }
-        }
+        newInventory = deductCharge(item as ItemWithUses, newInventory);
         result = { success: true, message: "OK" };
       }
 

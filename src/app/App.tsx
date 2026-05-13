@@ -78,7 +78,11 @@ const screenVariants: Variants = {
 };
 
 export default function App() {
-  const { powerState, setPowerState, theme } = useSystemStore();
+  const powerState = useSystemStore((state) => state.powerState);
+  const setPowerState = useSystemStore((state) => state.setPowerState);
+  const theme = useSystemStore((state) => state.theme);
+  const isSessionActive = useSystemStore((state) => state.isSessionActive);
+  const setSessionActive = useSystemStore((state) => state.setSessionActive);
   const creationStatus = useCharacterStore((state) => state.creationStatus);
   const setPendingInjection = useUIStore((state) => state.setPendingInjection);
   const name = useCharacterStore((state) => state.name);
@@ -95,12 +99,18 @@ export default function App() {
   } as React.CSSProperties;
 
   useEffect(() => {
-    if (powerState === "ONLINE" && name && creationStatus === "CLOSED") {
+    if (
+      powerState === "ONLINE" &&
+      name &&
+      creationStatus === "CLOSED" &&
+      isSessionActive
+    ) {
       connectNetwork(name);
     } else {
       useNetworkStore.getState().disconnect?.();
     }
-  }, [powerState, name, creationStatus, connectNetwork]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [powerState, name, creationStatus, isSessionActive]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -119,10 +129,15 @@ export default function App() {
     let timer: ReturnType<typeof setTimeout>;
     if (powerState === "SHUTTING_DOWN") {
       useNetworkStore.getState().disconnect?.();
-      timer = setTimeout(() => setPowerState("STANDBY"), 800);
+      timer = setTimeout(() => {
+        setPowerState("STANDBY");
+        setSessionActive(false);
+      }, 800);
     }
     return () => clearTimeout(timer);
-  }, [powerState, setPowerState]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [powerState]);
 
   useEffect(() => {
     if (inDev) return;
@@ -204,9 +219,12 @@ export default function App() {
                 {creationStatus === "FLAWS_SELECTION" && (
                   <DisadvantagesScreen />
                 )}
-                {creationStatus !== "NOT_STARTED" &&
-                  creationStatus !== "PRE_STARTED" &&
-                  creationStatus !== "FLAWS_SELECTION" && <SystemHud />}
+                {creationStatus === "CLOSED" && !isSessionActive && (
+                  <WelcomeScreen />
+                )}
+                {creationStatus === "CLOSED" && isSessionActive && (
+                  <SystemHud />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
