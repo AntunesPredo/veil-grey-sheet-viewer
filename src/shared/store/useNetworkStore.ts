@@ -24,6 +24,8 @@ interface NetworkState {
   connect: (playerName: string) => void;
   sendPayload: (target: string, type: string, data: unknown) => void;
   broadcastTelemetry: (playerName: string, data: unknown) => void;
+  broadcastPowerOff: (playerName: string) => void;
+  removeTelemetry: (playerName: string) => void;
   pushToQueue: (payload: QueuedPayload) => void;
   popQueue: () => void;
   disconnect: () => void;
@@ -43,7 +45,6 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   connect: (playerName) => {
     if (get().channel) return;
 
-    // CANAL PRIMÁRIO: Ações, Injeções e Presença
     const channel = supabase.channel("vg-session-main", {
       config: { presence: { key: playerName } },
     });
@@ -70,10 +71,8 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
         }
       });
 
-    // CANAL SECUNDÁRIO: Telemetria de Vitals isolada para não poluir o MAIN
     const telemetryChannel = supabase.channel("vg-telemetry");
 
-    // Listener atrelado ANTES do subscribe
     telemetryChannel
       .on("broadcast", { event: "SYNC_STATS" }, ({ payload }) => {
         set((state) => ({
@@ -82,6 +81,9 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
             [payload.name]: payload.data,
           },
         }));
+      })
+      .on("broadcast", { event: "POWER_OFF" }, ({ payload }) => {
+        get().removeTelemetry(payload.name);
       })
       .subscribe();
 
@@ -138,4 +140,22 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       });
     }
   },
+
+  broadcastPowerOff: (playerName) => {
+    const { telemetryChannel } = get();
+    if (telemetryChannel) {
+      telemetryChannel.send({
+        type: "broadcast",
+        event: "POWER_OFF",
+        payload: { name: playerName },
+      });
+    }
+  },
+
+  removeTelemetry: (playerName) =>
+    set((state) => {
+      const newData = { ...state.telemetryData };
+      delete newData[playerName];
+      return { telemetryData: newData };
+    }),
 }));

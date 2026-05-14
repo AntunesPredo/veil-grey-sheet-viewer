@@ -8,6 +8,7 @@ import { RetroToast } from "../../shared/ui/RetroToast";
 import CryptoJS from "crypto-js";
 import { useSystemStore } from "../../shared/store/useSystemStore";
 import { Power } from "lucide-react";
+import { useNetworkStore } from "../../shared/store/useNetworkStore";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -272,6 +273,7 @@ export function SettingsModal({
             <Button
               className="w-full flex justify-center gap-2 items-center text-[15px]"
               onClick={() => {
+                useNetworkStore.getState().broadcastPowerOff(name);
                 onClose();
                 setPowerState("SHUTTING_DOWN");
               }}
