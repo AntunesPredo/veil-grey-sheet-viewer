@@ -92,10 +92,11 @@ export function SettingsModal({
 
         if (action === "ENCRYPT") {
           const rawData = JSON.parse(content);
+          const data = rawData.data !== undefined ? rawData.data : rawData;
           const payload = {
             vg_version: APP_VERSION,
             timestamp: new Date().toISOString(),
-            data: rawData,
+            data,
           };
           outputStr = CryptoJS.AES.encrypt(
             JSON.stringify(payload),

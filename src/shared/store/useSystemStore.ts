@@ -17,9 +17,11 @@ interface SystemState {
   powerState: PowerState;
   theme: ThemeColors;
   isSessionActive: boolean;
+  hasSeenPresentation: boolean;
   setPowerState: (state: PowerState) => void;
   setThemeColor: (key: keyof ThemeColors, value: string) => void;
-  setSessionActive: (state: boolean) => void;
+  setSessionActive: (val: boolean) => void;
+  setHasSeenPresentation: (val: boolean) => void;
 }
 
 const defaultTheme: ThemeColors = {
@@ -38,10 +40,12 @@ export const useSystemStore = create<SystemState>()(
       powerState: "STANDBY",
       theme: defaultTheme,
       isSessionActive: false,
+      hasSeenPresentation: false,
       setPowerState: (state) => set({ powerState: state }),
       setThemeColor: (key, value) =>
         set((state) => ({ theme: { ...state.theme, [key]: value } })),
-      setSessionActive: (state) => set({ isSessionActive: state }),
+      setSessionActive: (val) => set({ isSessionActive: val }),
+      setHasSeenPresentation: (val) => set({ hasSeenPresentation: val }),
     }),
     {
       name: "vg-system-storage",

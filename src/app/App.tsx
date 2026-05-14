@@ -146,6 +146,8 @@ export default function App() {
     return () => window.removeEventListener("contextmenu", disableContextMenu);
   }, []);
 
+  const hasValidSave = !!name && creationStatus !== "NOT_STARTED";
+
   return (
     <div
       style={cssVars}
@@ -165,7 +167,7 @@ export default function App() {
               if (inDev) {
                 setPowerState("ONLINE");
               } else {
-                setPowerState("BOOTING");
+                setPowerState(hasValidSave ? "ONLINE" : "BOOTING");
                 openFullscreen();
               }
             }}
@@ -207,7 +209,7 @@ export default function App() {
               </motion.div>
             ) : (
               <motion.div
-                key={`screen-${creationStatus}`}
+                key={`screen-${creationStatus}-${isSessionActive}`}
                 initial={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}
                 animate={{ opacity: 1, filter: "brightness(1) blur(0px)" }}
                 exit={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}

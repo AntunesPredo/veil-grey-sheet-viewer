@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCharacterStore } from "../character/store";
 import { useSystemStore } from "../../shared/store/useSystemStore";
@@ -39,14 +39,21 @@ export function WelcomeScreen() {
   const storedName = useCharacterStore((state) => state.name);
   const creationStatus = useCharacterStore((state) => state.creationStatus);
   const isOutdatedSave = useCharacterStore((state) => state.isOutdatedSave);
-
+  const hasSeenPresentation = useSystemStore(
+    (state) => state.hasSeenPresentation,
+  );
+  const setHasSeenPresentation = useSystemStore(
+    (state) => state.setHasSeenPresentation,
+  );
   const setSessionActive = useSystemStore((state) => state.setSessionActive);
 
-  const hasValidSave = storedName && creationStatus !== "NOT_STARTED";
+  const hasValidSave = useMemo(() => {
+    return storedName && creationStatus !== "NOT_STARTED";
+  }, [storedName, creationStatus]);
 
   const [localName, setLocalName] = useState("");
   const [step, setStep] = useState<"presentation" | "identification">(
-    "presentation",
+    hasSeenPresentation || hasValidSave ? "identification" : "presentation",
   );
 
   const errorModal = useDisclosure();
@@ -68,10 +75,12 @@ export function WelcomeScreen() {
   useEffect(() => {
     if (step === "presentation") {
       const timer = setTimeout(() => {
+        setHasSeenPresentation(true);
         setStep("identification");
       }, 4500);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   const handleStartNew = () => {
@@ -139,7 +148,10 @@ export function WelcomeScreen() {
             animate="visible"
             exit="exit"
             className="flex flex-col items-center gap-6 cursor-pointer w-full"
-            onClick={() => setStep("identification")}
+            onClick={() => {
+              setHasSeenPresentation(true);
+              setStep("identification");
+            }}
             title="PULAR ABERTURA"
           >
             <p className="text-[var(--theme-text)] text-xs tracking-widest animate-pulse">
@@ -195,29 +207,39 @@ export function WelcomeScreen() {
               glitchIntensity="low"
             />
 
-            <div className="w-full flex flex-col gap-4 mt-8 mb-6 bg-[var(--theme-background)]/80 p-6 border border-[var(--theme-border)] shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-              {hasValidSave ? (
-                <>
-                  <div className="flex flex-col gap-2 text-center mb-4">
-                    <label className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
-                      DADOS RESIDUAIS ENCONTRADOS
-                    </label>
-                    <div
-                      className={`text-xl font-mono font-bold tracking-widest uppercase p-2 border ${isOutdatedSave ? "border-[var(--theme-danger)] text-[var(--theme-danger)] bg-[var(--theme-danger)]/10" : "border-[var(--theme-accent)] text-[var(--theme-accent)] bg-[var(--theme-accent)]/10"}`}
-                    >
-                      UNIDADE: {storedName}
+            <div className="w-full mt-8 mb-6 bg-[var(--theme-background)]/80 border border-[var(--theme-border)] shadow-[0_0_20px_rgba(0,0,0,0.5)] min-h-[320px] flex flex-col">
+              <AnimatePresence mode="wait">
+                {hasValidSave ? (
+                  <motion.div
+                    key="valid-save"
+                    initial={{ opacity: 0, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, filter: "blur(4px)" }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col gap-4 p-6 h-full justify-center w-full"
+                  >
+                    <div className="flex flex-col gap-2 text-center mb-4">
+                      <label className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
+                        DADOS RESIDUAIS ENCONTRADOS
+                      </label>
+                      <div
+                        className={`text-xl font-mono font-bold tracking-widest uppercase p-2 border ${isOutdatedSave ? "border-[var(--theme-danger)] text-[var(--theme-danger)] bg-[var(--theme-danger)]/10" : "border-[var(--theme-accent)] text-[var(--theme-accent)] bg-[var(--theme-accent)]/10"}`}
+                      >
+                        UNIDADE: {storedName}
+                      </div>
                     </div>
-                  </div>
 
-                  {isOutdatedSave ? (
-                    <div className="mb-2 p-3 bg-[var(--theme-danger)]/20 border border-[var(--theme-danger)]">
-                      <span className="text-[14px] font-bold text-[var(--theme-danger)] uppercase">
-                        INCOMPATIBILIDADE DE SISTEMA: A versão dos dados locais
-                        difere da versão da plataforma. Operação bloqueada para
-                        evitar corrupção. Exporte o backup ou destrua os dados.
-                      </span>
-                    </div>
-                  ) : (
+                    {isOutdatedSave && (
+                      <div className="mb-2 p-3 bg-[var(--theme-danger)]/20 border border-[var(--theme-danger)]">
+                        <span className="text-[14px] font-bold text-[var(--theme-danger)] uppercase">
+                          INCOMPATIBILIDADE DE SISTEMA: A versão dos dados
+                          difere da versão da plataforma. Operação bloqueada
+                          para evitar corrupção. Exporte o backup ou destrua os
+                          dados.
+                        </span>
+                      </div>
+                    )}
+
                     <Button
                       className="w-full py-3"
                       onClick={handleResumeSession}
@@ -225,68 +247,75 @@ export function WelcomeScreen() {
                     >
                       RETOMAR SESSÃO
                     </Button>
-                  )}
 
-                  <Button
-                    variant="warning"
-                    className="w-full py-3 border-dashed"
-                    onClick={handleExportSave}
-                  >
-                    [ EXPORTAR BACKUP .JSON ]
-                  </Button>
-
-                  <div className="border-t border-dashed border-[var(--theme-border)] pt-4 w-full mt-2">
-                    <Button
-                      variant="danger"
-                      className="w-full py-3"
-                      onClick={resetConfirmModal.onOpen}
-                    >
-                      DESTRUIR DADOS E INICIAR NOVO
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-2 text-center">
-                    <label className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
-                      IDENTIFIQUE-SE
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="NOME/ID"
-                      value={localName}
-                      onChange={(e) => setLocalName(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        localName.trim() &&
-                        handleStartNew()
-                      }
-                      className="w-full text-center text-lg py-2 font-bold"
-                      autoFocus
-                    />
-                  </div>
-                  <Button className="w-full py-3" onClick={handleStartNew}>
-                    INICIAR PROTOCOLO
-                  </Button>
-                  <Button
-                    variant="warning"
-                    className="w-full border-dashed"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    [ IMPORTAR .JSON ]
-                  </Button>
-
-                  <div className="border-t border-dashed border-[var(--theme-border)] pt-4 w-full">
                     <Button
                       variant="warning"
-                      className="w-full opacity-60 hover:opacity-100 border-none"
-                      onClick={handleSandbox}
+                      className="w-full py-3 border-dashed"
+                      onClick={handleExportSave}
                     >
-                      [ ACESSAR MODO SANDBOX ]
+                      [ EXPORTAR BACKUP .JSON ]
                     </Button>
-                  </div>
-                </>
-              )}
+
+                    <div className="border-t border-dashed border-[var(--theme-border)] pt-4 w-full mt-2">
+                      <Button
+                        variant="danger"
+                        className="w-full py-3"
+                        onClick={resetConfirmModal.onOpen}
+                      >
+                        DESTRUIR DADOS E INICIAR NOVO
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="new-save"
+                    initial={{ opacity: 0, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, filter: "blur(4px)" }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col gap-4 p-6 h-full justify-center w-full"
+                  >
+                    <div className="flex flex-col gap-2 text-center">
+                      <label className="text-[10px] text-[var(--theme-accent)] font-bold tracking-widest">
+                        IDENTIFIQUE-SE
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="NOME/ID"
+                        value={localName}
+                        onChange={(e) => setLocalName(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" &&
+                          localName.trim() &&
+                          handleStartNew()
+                        }
+                        className="w-full text-center text-lg py-2 font-bold"
+                        autoFocus
+                      />
+                    </div>
+                    <Button className="w-full py-3" onClick={handleStartNew}>
+                      INICIAR PROTOCOLO
+                    </Button>
+                    <Button
+                      variant="warning"
+                      className="w-full border-dashed"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      [ IMPORTAR .JSON ]
+                    </Button>
+
+                    <div className="border-t border-dashed border-[var(--theme-border)] pt-4 w-full">
+                      <Button
+                        variant="warning"
+                        className="w-full opacity-60 hover:opacity-100 border-none"
+                        onClick={handleSandbox}
+                      >
+                        [ ACESSAR MODO SANDBOX ]
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <input
                 type="file"
@@ -307,8 +336,10 @@ export function WelcomeScreen() {
         message="Esta ação apagará permanentemente o save atual. Deseja prosseguir?"
         isDanger
         onConfirm={() => {
-          resetCharacterData();
           resetConfirmModal.onClose();
+          setTimeout(() => {
+            resetCharacterData();
+          }, 300);
         }}
       />
 
@@ -319,8 +350,10 @@ export function WelcomeScreen() {
         message={confirmModalMessage}
         isDanger
         onConfirm={() => {
-          setConfirmModalMessage("");
           errorModal.onClose();
+          setTimeout(() => {
+            setConfirmModalMessage("");
+          }, 300);
         }}
       />
     </div>
