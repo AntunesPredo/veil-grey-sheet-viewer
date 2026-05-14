@@ -15,8 +15,11 @@ import { SustenanceTransactionModal } from "../../features/vitals/SustenanceTran
 import { QuickRestModal } from "../../features/vitals/QuickRestModal";
 import { FullRestModal } from "../../features/vitals/FullRestModal";
 import { NetworkQueueManager } from "./NetworkQueueManager";
+import { useTelemetrySync } from "../../features/character/useTelemetrySync";
 
 export function SystemHud() {
+  useTelemetrySync();
+
   const tabs = [
     { key: "front", label: "MAINFRAME" },
     { key: "inventory", label: "LOGÍSTICA" },

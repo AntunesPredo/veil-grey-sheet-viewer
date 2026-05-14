@@ -10,6 +10,7 @@ import { Booting } from "./layout/Booting";
 import { DisadvantagesScreen } from "../features/setup/DisadvantagesScreen";
 import { useUIStore } from "../shared/store/useUIStore";
 import { useNetworkStore } from "../shared/store/useNetworkStore";
+import { MasterHud } from "../features/master/MasterHud";
 
 const inDev =
   import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
@@ -84,6 +85,7 @@ export default function App() {
   const isSessionActive = useSystemStore((state) => state.isSessionActive);
   const setSessionActive = useSystemStore((state) => state.setSessionActive);
   const creationStatus = useCharacterStore((state) => state.creationStatus);
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
   const setPendingInjection = useUIStore((state) => state.setPendingInjection);
   const name = useCharacterStore((state) => state.name);
   const connectNetwork = useNetworkStore((state) => state.connect);
@@ -224,9 +226,12 @@ export default function App() {
                 {creationStatus === "CLOSED" && !isSessionActive && (
                   <WelcomeScreen />
                 )}
-                {creationStatus === "CLOSED" && isSessionActive && (
-                  <SystemHud />
-                )}
+                {creationStatus === "CLOSED" &&
+                  isSessionActive &&
+                  !isMasterMode && <SystemHud />}
+                {creationStatus === "CLOSED" &&
+                  isSessionActive &&
+                  isMasterMode && <MasterHud />}
               </motion.div>
             )}
           </AnimatePresence>

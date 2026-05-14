@@ -16,6 +16,7 @@ export interface ProgressionSlice {
   usedInjectIds: string[];
   creationStatus: CreationStatus;
   sandboxMode: boolean;
+  isMasterMode: boolean;
   freePoints: { attributes: number; skills: number; specializations: number };
   role: Role | null;
   settings: { lockPoints: boolean; showRollDetails: boolean };
@@ -51,6 +52,7 @@ export const createProgressionSlice: StateCreator<
   usedInjectIds: [],
   creationStatus: "NOT_STARTED",
   sandboxMode: false,
+  isMasterMode: false,
   freePoints: { attributes: 0, skills: 0, specializations: 0 },
   role: null,
   settings: { lockPoints: true, showRollDetails: true },

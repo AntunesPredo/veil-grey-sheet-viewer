@@ -99,9 +99,15 @@ interface ItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   itemToEdit: Item | null;
+  onSaveOverride?: (item: Item, nestedItems?: Item[]) => void;
 }
 
-export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
+export function ItemModal({
+  isOpen,
+  onClose,
+  itemToEdit,
+  onSaveOverride,
+}: ItemModalProps) {
   const addInventoryItem = useCharacterStore((state) => state.addInventoryItem);
   const updateInventoryItem = useCharacterStore(
     (state) => state.updateInventoryItem,
@@ -224,6 +230,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
 
     try {
       const finalItem = buildFinalItem(formData);
+      const nestedItemsToGenerate: Item[] = [];
 
       if (
         (finalItem.type === "RECHARGEABLE" || finalItem.type === "KIT") &&
@@ -232,10 +239,7 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
         const initialUses = formData.fullCharge
           ? formData.maxUses
           : Math.min(formData.uses, formData.maxUses);
-
         finalItem.uses = 0;
-
-        addInventoryItem(finalItem);
 
         if (initialUses > 0) {
           const ammo: ConsumableItem = {
@@ -259,8 +263,24 @@ export function ItemModal({ isOpen, onClose, itemToEdit }: ItemModalProps) {
             effects: [],
             instantActions: [],
           };
-          addInventoryItem(ammo);
+          nestedItemsToGenerate.push(ammo);
         }
+      }
+
+      if (onSaveOverride) {
+        onSaveOverride(finalItem, nestedItemsToGenerate);
+        RetroToast.success(`[${formData.name}] INSERIDO NO ARSENAL GLOBAL.`);
+        onClose();
+        return;
+      }
+
+      if (
+        (finalItem.type === "RECHARGEABLE" || finalItem.type === "KIT") &&
+        !itemToEdit
+      ) {
+        addInventoryItem(finalItem);
+        if (nestedItemsToGenerate.length > 0)
+          addInventoryItem(nestedItemsToGenerate[0]);
         RetroToast.success(
           `[${formData.name}] SINTETIZADO COM CARGAS INTERNAS.`,
         );

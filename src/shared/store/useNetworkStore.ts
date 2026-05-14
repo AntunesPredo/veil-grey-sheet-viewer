@@ -16,10 +16,14 @@ export interface QueuedPayload {
 
 interface NetworkState {
   onlinePlayers: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  telemetryData: Record<string, any>;
   channel: RealtimeChannel | null;
+  telemetryChannel: RealtimeChannel | null;
   queue: QueuedPayload[];
   connect: (playerName: string) => void;
   sendPayload: (target: string, type: string, data: unknown) => void;
+  broadcastTelemetry: (playerName: string, data: unknown) => void;
   pushToQueue: (payload: QueuedPayload) => void;
   popQueue: () => void;
   disconnect: () => void;
@@ -27,7 +31,9 @@ interface NetworkState {
 
 export const useNetworkStore = create<NetworkState>((set, get) => ({
   onlinePlayers: [],
+  telemetryData: {},
   channel: null,
+  telemetryChannel: null,
   queue: [],
 
   pushToQueue: (payload) =>
@@ -37,6 +43,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
   connect: (playerName) => {
     if (get().channel) return;
 
+    // CANAL PRIMÁRIO: Ações, Injeções e Presença
     const channel = supabase.channel("vg-session-main", {
       config: { presence: { key: playerName } },
     });
@@ -51,7 +58,7 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
           get().pushToQueue({
             id: crypto.randomUUID(),
             type: payload.type,
-            attackerName: payload.attackerName || "M.D",
+            attackerName: payload.attackerName || "SYS.OVERSEER",
             data: payload.data,
           });
           RetroToast.info(`PACOTE ENFILEIRADO: [${payload.type}]`);
@@ -63,22 +70,44 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
         }
       });
 
+    // CANAL SECUNDÁRIO: Telemetria de Vitals isolada para não poluir o MAIN
+    const telemetryChannel = supabase.channel("vg-telemetry");
+
+    // Listener atrelado ANTES do subscribe
+    telemetryChannel
+      .on("broadcast", { event: "SYNC_STATS" }, ({ payload }) => {
+        set((state) => ({
+          telemetryData: {
+            ...state.telemetryData,
+            [payload.name]: payload.data,
+          },
+        }));
+      })
+      .subscribe();
+
     RetroToast.success(`SYS.ONLINE | CONNECTED AS: [${playerName}]`);
-    set({ channel });
+    set({ channel, telemetryChannel });
   },
 
   disconnect: () => {
-    const { channel } = get();
+    const { channel, telemetryChannel } = get();
     if (channel) {
       channel.untrack();
       channel.unsubscribe();
-      set({ channel: null, onlinePlayers: [] });
     }
+    if (telemetryChannel) {
+      telemetryChannel.unsubscribe();
+    }
+    set({
+      channel: null,
+      telemetryChannel: null,
+      onlinePlayers: [],
+      telemetryData: {},
+    });
   },
 
   sendPayload: (target, type, data) => {
     const senderName = useCharacterStore.getState().name;
-
     if (target === "SELF") {
       get().pushToQueue({
         id: crypto.randomUUID(),
@@ -89,17 +118,24 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
       RetroToast.info(`PACOTE ENFILEIRADO LOCALMENTE: [${type}]`);
       return;
     }
-
     const { channel } = get();
     if (channel) {
-      const senderName = useCharacterStore.getState().name;
       channel.send({
         type: "broadcast",
         event: "system-inject",
         payload: { target, type, attackerName: senderName, data },
       });
-    } else {
-      RetroToast.error("FALHA DE COMUNICAÇÃO: SISTEMA OFFLINE.");
+    }
+  },
+
+  broadcastTelemetry: (playerName, data) => {
+    const { telemetryChannel } = get();
+    if (telemetryChannel) {
+      telemetryChannel.send({
+        type: "broadcast",
+        event: "SYNC_STATS",
+        payload: { name: playerName, data },
+      });
     }
   },
 }));

@@ -12,6 +12,8 @@ import CryptoJS from "crypto-js";
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
+const isDev =
+  import.meta.env.VITE_IN_DEVELOPMENT === "true" || import.meta.env.DEV;
 
 const fadeVariants: Variants = {
   hidden: { opacity: 0, filter: "blur(4px)", scale: 0.95 },
@@ -88,6 +90,16 @@ export function WelcomeScreen() {
       RetroToast.error("IDENTIFICAÇÃO OBRIGATÓRIA.");
       return;
     }
+
+    if (localName.trim() === "hahaéoakula" && isDev) {
+      updateProgression({
+        name: "MESTRE",
+        isMasterMode: true,
+        creationStatus: "CLOSED",
+      });
+      return;
+    }
+
     updateProgression({ name: localName, creationStatus: "PRE_STARTED" });
   };
 

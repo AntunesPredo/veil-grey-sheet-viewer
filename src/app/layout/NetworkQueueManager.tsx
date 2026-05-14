@@ -26,10 +26,12 @@ export function NetworkQueueManager() {
     addInventoryItem,
     addXp,
     addCustomEffect,
+    removeCustomEffect,
     processDirectAction,
     attributes,
     skills,
   } = useCharacterStore();
+
   const { initiateRoll } = useRoller();
 
   const processingIdRef = useRef<string | null>(null);
@@ -46,6 +48,16 @@ export function NetworkQueueManager() {
       vitals.isDefenseOpen ||
       vitals.isInsanityOpen ||
       vitals.isSustenanceOpen;
+
+    if (current.type === "REMOVE_EFFECT") {
+      const data = current.data as { id: number };
+      removeCustomEffect(data.id);
+      RetroToast.warning("O MESTRE REMOVEU UM EFEITO.");
+      popQueue();
+      if (processingIdRef.current === current.id)
+        processingIdRef.current = null;
+      return;
+    }
 
     if (processingIdRef.current === current.id) {
       if (["COMBAT_DEFENSE", "ACTION"].includes(current.type)) {
@@ -112,7 +124,8 @@ export function NetworkQueueManager() {
   if (queue.length === 0) return null;
   const current = queue[0];
 
-  if (["COMBAT_DEFENSE"].includes(current.type)) return null;
+  if (["COMBAT_DEFENSE", "REMOVE_EFFECT"].includes(current.type)) return null;
+
   if (current.type === "ACTION") {
     const act = current.data as {
       target: string;
