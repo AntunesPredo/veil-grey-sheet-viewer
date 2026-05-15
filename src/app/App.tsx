@@ -226,7 +226,8 @@ export default function App() {
                 {creationStatus === "CLOSED" && !isSessionActive && (
                   <WelcomeScreen />
                 )}
-                {creationStatus === "CLOSED" &&
+                {(creationStatus === "CLOSED" ||
+                  creationStatus === "LEVEL_UP") &&
                   isSessionActive &&
                   !isMasterMode && <SystemHud />}
                 {creationStatus === "CLOSED" &&
