@@ -111,8 +111,7 @@ export default function App() {
     } else {
       useNetworkStore.getState().disconnect?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [powerState, name, creationStatus, isSessionActive]);
+  }, [powerState, name, creationStatus, isSessionActive, connectNetwork]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -137,9 +136,7 @@ export default function App() {
       }, 800);
     }
     return () => clearTimeout(timer);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [powerState]);
+  }, [powerState, setPowerState, setSessionActive]);
 
   useEffect(() => {
     if (inDev) return;
@@ -149,6 +146,26 @@ export default function App() {
   }, []);
 
   const hasValidSave = !!name && creationStatus !== "NOT_STARTED";
+
+  const renderActiveScreen = () => {
+    if (!isSessionActive) {
+      return <WelcomeScreen key="screen-welcome" />;
+    }
+
+    switch (creationStatus) {
+      case "PRE_STARTED":
+        return <RoleSelectionScreen key="screen-roles" />;
+      case "FLAWS_SELECTION":
+        return <DisadvantagesScreen key="screen-flaws" />;
+      case "STARTED":
+      case "LEVEL_UP":
+      case "CLOSED":
+        if (isMasterMode) return <MasterHud key="screen-master" />;
+        return <SystemHud key="screen-system" />;
+      default:
+        return <WelcomeScreen key="screen-fallback" />;
+    }
+  };
 
   return (
     <div
@@ -211,28 +228,14 @@ export default function App() {
               </motion.div>
             ) : (
               <motion.div
-                key={`screen-${creationStatus === "CLOSED" || creationStatus === "LEVEL_UP" ? "hud" : creationStatus}-${isSessionActive}`}
+                key="active-session"
                 initial={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}
                 animate={{ opacity: 1, filter: "brightness(1) blur(0px)" }}
                 exit={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}
                 transition={{ duration: 0.6, ease: "easeInOut" }}
                 className="flex-1 flex flex-col w-full h-full"
               >
-                {creationStatus === "NOT_STARTED" && <WelcomeScreen />}
-                {creationStatus === "PRE_STARTED" && <RoleSelectionScreen />}
-                {creationStatus === "FLAWS_SELECTION" && (
-                  <DisadvantagesScreen />
-                )}
-                {creationStatus === "CLOSED" && !isSessionActive && (
-                  <WelcomeScreen />
-                )}
-                {(creationStatus === "CLOSED" ||
-                  creationStatus === "LEVEL_UP") &&
-                  isSessionActive &&
-                  !isMasterMode && <SystemHud />}
-                {creationStatus === "CLOSED" &&
-                  isSessionActive &&
-                  isMasterMode && <MasterHud />}
+                {renderActiveScreen()}
               </motion.div>
             )}
           </AnimatePresence>

@@ -97,10 +97,12 @@ export function WelcomeScreen() {
         isMasterMode: true,
         creationStatus: "CLOSED",
       });
+      setSessionActive(true);
       return;
     }
 
     updateProgression({ name: localName, creationStatus: "PRE_STARTED" });
+    setSessionActive(true);
   };
 
   const handleResumeSession = () => {
@@ -147,6 +149,7 @@ export function WelcomeScreen() {
       sandboxMode: true,
       creationStatus: "CLOSED",
     });
+    setSessionActive(true);
   };
 
   return (

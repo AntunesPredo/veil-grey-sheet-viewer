@@ -161,6 +161,7 @@ export function DisadvantagesScreen() {
                             const isPositive = e.val > 0;
                             return (
                               <div
+                                key={`effect-${e.id}`}
                                 className={`mt-2 text-[9px] font-mono font-bold ${isPositive ? "text-[var(--theme-success)]" : "text-[var(--theme-danger)]"} uppercase border-t border-dashed border-[var(--theme-danger)]/30 pt-1`}
                               >
                                 &gt; [{e.mode}] TARGET: {e.target} (
