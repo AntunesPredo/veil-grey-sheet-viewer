@@ -8,6 +8,8 @@ import { TargetSelectionModal } from "../../shared/ui/TargetSelectionModal";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { useSystemData } from "../../shared/hooks/useSystemData";
+import { useMasterStore } from "../master/masterStore";
+import { INSTANT_ACTION_TARGETS } from "../../shared/utils/actionTargets";
 
 type InjectPayloadType = "XP" | "ITEM" | "EFFECT" | "ACTION" | "TEST";
 
@@ -25,8 +27,16 @@ export function HashGeneratorModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const inventory = useCharacterStore((state) => state.inventory);
-  const customEffects = useCharacterStore((state) => state.customEffects);
+  const isMasterMode = useCharacterStore((state) => state.isMasterMode);
+
+  const playerInventory = useCharacterStore((state) => state.inventory);
+  const playerEffects = useCharacterStore((state) => state.customEffects);
+  const masterInventory = useMasterStore((state) => state.globalItems);
+  const masterEffects = useMasterStore((state) => state.globalEffects);
+
+  const inventory = isMasterMode ? masterInventory : playerInventory;
+  const customEffects = isMasterMode ? masterEffects : playerEffects;
+
   const sendPayload = useNetworkStore((state) => state.sendPayload);
   const { attributes: sysAttrs, skills: sysSkills } = useSystemData();
   const allRollables = [...sysAttrs, ...sysSkills];
@@ -309,12 +319,11 @@ export function HashGeneratorModal({
                       className="bg-black border-2 border-[var(--theme-warning)] text-[var(--theme-warning)] p-3 text-sm font-mono font-bold outline-none w-full"
                     >
                       <option value="">-- SELECIONAR ALVO DE AÇÃO --</option>
-                      <option value="HP_HEAL">PONTOS DE VIDA (+ CURA)</option>
-                      <option value="HP_DRAIN">PONTOS DE VIDA (- DANO)</option>
-                      <option value="INSANITY_ADD">LOUCURA (+ SUCUMBIR)</option>
-                      <option value="INSANITY_DRAIN">
-                        LOUCURA (- RECENTRALIZAR)
-                      </option>
+                      {INSTANT_ACTION_TARGETS.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
                     </select>
 
                     <div className="flex gap-4 items-end">

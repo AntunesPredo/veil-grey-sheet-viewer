@@ -160,7 +160,7 @@ export function SystemModifiersWidget() {
       <CustomEffectModal
         isOpen={globalModal.isOpen}
         onClose={globalModal.onClose}
-        allowedModes={["FIXED", "OPTIONAL"]}
+        allowedModes={["FIXED", "OPTIONAL", "BONUS"]}
       />
 
       <CustomEffectModal

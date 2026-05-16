@@ -4,6 +4,9 @@ import { useCharacterStore } from "../character/store";
 import type { Item } from "../../shared/types/veil-grey";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { Button, Input } from "../../shared/ui/Form";
+import CryptoJS from "crypto-js";
+
+const SECRET_KEY = import.meta.env.VITE_SECRET_KEY || "fallback_veil_grey_key";
 
 interface Step1MethodProps {
   onNext: () => void;
@@ -18,11 +21,26 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
   const handleImport = () => {
     if (!hash.trim()) return;
     try {
-      const decodedString = decodeURIComponent(atob(hash.trim()));
-      const decoded = JSON.parse(decodedString) as Item;
+      let cleanHash = decodeURIComponent(hash.trim());
+      cleanHash = cleanHash.replace(/\s/g, "+");
+
+      const bytes = CryptoJS.AES.decrypt(cleanHash, SECRET_KEY);
+      const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+
+      if (!decryptedString)
+        throw new Error("Payload criptográfico corrompido ou incorreto.");
+
+      const parsedData = JSON.parse(decryptedString);
+      const payloads = Array.isArray(parsedData) ? parsedData : [parsedData];
+      const itemPayload = payloads[0];
+
+      if (itemPayload.type !== "ITEM")
+        throw new Error(
+          "O Hash fornecido não contém a assinatura de um item válido.",
+        );
 
       const newItem: Item = {
-        ...decoded,
+        ...(itemPayload.data as Item),
         id: Date.now(),
         isCarried: true,
         parentId: null,
@@ -33,7 +51,7 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
       onClose();
     } catch (error) {
       onError(
-        `Erro durante a decodificação da matéria - ${(error as Error).message ?? "Desconhecido"}`,
+        `Erro de decodificação no Módulo - ${(error as Error).message ?? "Falha de Leitura"}`,
       );
     }
   };
@@ -47,10 +65,10 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
     >
       <div className="flex flex-col gap-2 p-4 border border-[var(--theme-accent)] bg-[var(--theme-accent)]/5">
         <span className="text-[10px] font-bold text-[var(--theme-accent)] tracking-widest uppercase">
-          RECONSTRUÇÃO VIA HASH (BASE64)
+          RECONSTRUÇÃO VIA HASH
         </span>
         <Input
-          placeholder="Insira o código encriptado..."
+          placeholder="Insira o código de injeção..."
           value={hash}
           onChange={(e) => setHash(e.target.value)}
           className="w-full font-mono text-xs"
@@ -65,9 +83,11 @@ export function Step1Method({ onNext, onClose, onError }: Step1MethodProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-[#333]" />
-        <span className="text-xs text-gray-500 font-bold">OU</span>
-        <div className="flex-1 h-px bg-[#333]" />
+        <div className="flex-1 h-px bg-[var(--theme-border)]" />
+        <span className="text-xs text-[var(--theme-text)]/50 font-bold">
+          OU
+        </span>
+        <div className="flex-1 h-px bg-[var(--theme-border)]" />
       </div>
 
       <Button

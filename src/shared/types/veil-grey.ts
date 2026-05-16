@@ -101,7 +101,7 @@ export interface InstantAction {
   description: string;
 }
 
-export type EffectMode = "FIXED" | "OPTIONAL" | "TEMP";
+export type EffectMode = "FIXED" | "OPTIONAL" | "TEMP" | "BONUS";
 
 export interface CustomEffect {
   id: number;
@@ -110,6 +110,7 @@ export interface CustomEffect {
   mode: EffectMode;
   link: number | string | null;
   val: number;
+  isAccounted?: boolean;
 }
 
 export type ItemType =

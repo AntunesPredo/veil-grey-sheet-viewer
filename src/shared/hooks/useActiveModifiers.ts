@@ -10,7 +10,11 @@ export function useActiveModifiers() {
 
   const equippedItemEffects: CustomEffect[] = inventory
     .filter((i) => i.isEquipped)
-    .flatMap((i) => i.effects?.filter((e) => e.mode === "FIXED") || []);
+    .flatMap(
+      (i) =>
+        i.effects?.filter((e) => e.mode === "FIXED" || e.mode === "BONUS") ||
+        [],
+    );
 
   const activeEffects = [
     ...customEffects,
@@ -20,7 +24,21 @@ export function useActiveModifiers() {
 
   const getTargetSum = (target: string): number => {
     return activeEffects
-      .filter((e) => e.target === target && e.mode !== "OPTIONAL")
+      .filter(
+        (e) =>
+          e.target === target &&
+          e.mode !== "OPTIONAL" &&
+          e.mode !== "BONUS" &&
+          !e.isAccounted,
+      )
+      .reduce((sum, e) => sum + e.val, 0);
+  };
+
+  const getBonusSum = (target: string): number => {
+    return activeEffects
+      .filter(
+        (e) => e.target === target && e.mode === "BONUS" && !e.isAccounted,
+      )
       .reduce((sum, e) => sum + e.val, 0);
   };
 
@@ -35,6 +53,7 @@ export function useActiveModifiers() {
   return {
     activeEffects,
     getTargetSum,
+    getBonusSum,
     getAttrMod,
     getSkillMod,
   };

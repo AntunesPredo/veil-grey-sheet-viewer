@@ -211,7 +211,7 @@ export default function App() {
               </motion.div>
             ) : (
               <motion.div
-                key={`screen-${creationStatus}-${isSessionActive}`}
+                key={`screen-${creationStatus === "CLOSED" || creationStatus === "LEVEL_UP" ? "hud" : creationStatus}-${isSessionActive}`}
                 initial={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}
                 animate={{ opacity: 1, filter: "brightness(1) blur(0px)" }}
                 exit={{ opacity: 0, filter: "brightness(0.5) blur(5px)" }}

@@ -2,42 +2,13 @@ import { motion } from "framer-motion";
 import type { ItemType } from "../../shared/types/veil-grey";
 import { Input } from "../../shared/ui/Form";
 import type { ItemFormData } from "./ItemModal";
+import { ITEM_TYPES } from "../../shared/utils/selectOptions";
 
 interface Step2IdentityProps {
   formData: ItemFormData;
   setFormData: React.Dispatch<React.SetStateAction<ItemFormData>>;
   onTypeSelect: (type: ItemType) => void;
 }
-
-const ITEM_TYPES: { id: ItemType; label: string; desc: string }[] = [
-  {
-    id: "MATERIAL",
-    label: "MATERIAL",
-    desc: "Peças, componentes ou cosméticos.",
-  },
-  {
-    id: "CONSUMABLE",
-    label: "CONSUMÍVEL",
-    desc: "Itens de uso (munição, remédio).",
-  },
-  {
-    id: "RECHARGEABLE",
-    label: "RECARREGÁVEL",
-    desc: "Carrega consumíveis (pente, cantil).",
-  },
-  {
-    id: "ACTIVE",
-    label: "ATIVO",
-    desc: "Ferramentas ou Armas com limiar de uso.",
-  },
-  { id: "KIT", label: "KIT", desc: "Atrelado a perícias. Usa consumíveis." },
-  { id: "CONTAINER", label: "CONTÊINER", desc: "Guarda itens e reduz peso." },
-  {
-    id: "EQUIPABLE",
-    label: "EQUIPÁVEL",
-    desc: "Pode ser vestido (colete, mochila).",
-  },
-];
 
 export function Step2Identity({
   formData,

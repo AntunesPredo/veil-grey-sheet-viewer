@@ -8,6 +8,13 @@ import type {
 import { useCharacterStore } from "../character/store";
 import { Modal } from "../../shared/ui/Overlays";
 import { Button, Checkbox, Input } from "../../shared/ui/Form";
+import {
+  EFFECT_MODES,
+  GLOBAL_ATTR_TARGETS,
+  GLOBAL_SKILL_TARGETS,
+  PROGRESSION_TARGETS,
+  VITALS_TARGETS,
+} from "../../shared/utils/selectOptions";
 
 interface CustomEffectModalProps {
   isOpen: boolean;
@@ -21,7 +28,7 @@ export function CustomEffectModal({
   isOpen,
   onClose,
   link = null,
-  allowedModes = ["FIXED", "OPTIONAL", "TEMP"],
+  allowedModes = ["FIXED", "OPTIONAL", "TEMP", "BONUS"],
   onSave,
 }: CustomEffectModalProps) {
   const addCustomEffect = useCharacterStore((state) => state.addCustomEffect);
@@ -99,38 +106,29 @@ export function CustomEffectModal({
         )),
       );
     if (category === "glob_attr")
-      return (
-        <>
-          <option value="ATT_PHYSICAL">FÍSICO (ATTR)</option>
-          <option value="ATT_MENTAL">MENTAL (ATTR)</option>
-          <option value="ATT_SOCIAL">SOCIAL (ATTR)</option>
-        </>
-      );
+      return GLOBAL_ATTR_TARGETS.map((t) => (
+        <option key={t.value} value={t.value}>
+          {t.label}
+        </option>
+      ));
     if (category === "glob_skill")
-      return (
-        <>
-          <option value="SKILL_PHYSICAL">FÍSICO (SKILL)</option>
-          <option value="SKILL_MENTAL">MENTAL (SKILL)</option>
-          <option value="SKILL_SOCIAL">SOCIAL (SKILL)</option>
-        </>
-      );
+      return GLOBAL_SKILL_TARGETS.map((t) => (
+        <option key={t.value} value={t.value}>
+          {t.label}
+        </option>
+      ));
     if (category === "vitals")
-      return (
-        <>
-          <option value="HP">PONTOS DE VIDA (HP)</option>
-          <option value="INSANITY">LOUCURA</option>
-          <option value="MOVEMENT">MOVIMENTO (MOV)</option>
-          <option value="ACTION_POINTS">PONTOS DE AÇÃO (AP)</option>
-          <option value="REACTIONS">REAÇÕES (RCT)</option>
-        </>
-      );
+      return VITALS_TARGETS.map((t) => (
+        <option key={t.value} value={t.value}>
+          {t.label}
+        </option>
+      ));
     if (category === "progression")
-      return (
-        <>
-          <option value="FREE_ATTR">PONTOS LIVRES (ATTR)</option>
-          <option value="FREE_SKILL">PONTOS LIVRES (SKILL)</option>
-        </>
-      );
+      return PROGRESSION_TARGETS.map((t) => (
+        <option key={t.value} value={t.value}>
+          {t.label}
+        </option>
+      ));
     return (
       <option value="" disabled>
         -- SELECIONE A CATEGORIA PRIMEIRO --
@@ -244,14 +242,12 @@ export function CustomEffectModal({
               disabled={allowedModes.length === 1}
             >
               <option value="">-- MODO --</option>
-              {allowedModes.includes("FIXED") && (
-                <option value="FIXED">FIXO</option>
-              )}
-              {allowedModes.includes("OPTIONAL") && (
-                <option value="OPTIONAL">OPCIONAL</option>
-              )}
-              {allowedModes.includes("TEMP") && (
-                <option value="TEMP">TEMPORÁRIO</option>
+              {EFFECT_MODES.filter((m) => allowedModes.includes(m.value)).map(
+                (m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ),
               )}
             </select>
           </div>

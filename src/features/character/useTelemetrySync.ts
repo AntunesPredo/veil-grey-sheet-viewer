@@ -3,6 +3,7 @@ import { useCharacterStore } from "./store";
 import { useNetworkStore } from "../../shared/store/useNetworkStore";
 import { useCharacterStats } from "../../shared/hooks/useCharacterStats";
 import { useActiveModifiers } from "../../shared/hooks/useActiveModifiers";
+import CryptoJS from "crypto-js";
 
 export function useTelemetrySync() {
   const name = useCharacterStore((state) => state.name);
@@ -34,6 +35,11 @@ export function useTelemetrySync() {
     (state) => state.telemetryChannel !== null,
   );
 
+  const masterPingTimestamp = useNetworkStore(
+    (state) => state.masterPingTimestamp,
+  );
+  const masterKnownHashes = useNetworkStore((state) => state.masterKnownHashes);
+
   const lastPayloadHash = useRef<string>("");
 
   const triggerSync = useCallback(
@@ -60,11 +66,12 @@ export function useTelemetrySync() {
         disadvantages,
       };
 
-      const currentHash = JSON.stringify(payload);
+      const payloadString = JSON.stringify(payload);
+      const currentHash = CryptoJS.MD5(payloadString).toString();
 
       if (force || currentHash !== lastPayloadHash.current) {
         lastPayloadHash.current = currentHash;
-        broadcastTelemetry(name, payload);
+        broadcastTelemetry(name, currentHash, payload);
       }
     },
     [
@@ -96,9 +103,11 @@ export function useTelemetrySync() {
   }, [triggerSync]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      triggerSync(true);
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [triggerSync]);
+    if (masterPingTimestamp > 0) {
+      const myHashInMaster = masterKnownHashes[name];
+      if (myHashInMaster !== lastPayloadHash.current) {
+        triggerSync(true);
+      }
+    }
+  }, [masterPingTimestamp, masterKnownHashes, name, triggerSync]);
 }

@@ -5,6 +5,7 @@ import type {
 } from "../../shared/types/veil-grey";
 import { Modal } from "../../shared/ui/Overlays";
 import { Button, Input } from "../../shared/ui/Form";
+import { INSTANT_ACTION_TARGETS } from "../../shared/utils/actionTargets";
 
 interface InstantActionModalProps {
   isOpen: boolean;
@@ -79,27 +80,11 @@ export function InstantActionModal({
             className="w-full bg-[var(--theme-background)] text-[var(--theme-accent)] border border-[var(--theme-border)] p-1.5 outline-none text-xs font-mono uppercase"
           >
             <option value="">-- SELECIONE O ALVO --</option>
-            <option value="HP_HEAL">PONTOS DE VIDA (+ CURA)</option>
-            <option value="HP_DRAIN">PONTOS DE VIDA (- DANO)</option>
-            <option value="HP_TEMP">VIDA TEMPORÁRIA (+ TEMP HP)</option>
-
-            <option disabled>────────────</option>
-            <option value="ENERGY_STAGE_RESTORE">ENERGIA (+1 ESTÁGIO)</option>
-            <option value="ENERGY_STAGE_DRAIN">ENERGIA (-1 ESTÁGIO)</option>
-            <option value="ENERGY_USES_RESTORE">
-              ENERGIA (+ USOS DE BATERIA)
-            </option>
-            <option value="ENERGY_USES_DRAIN">
-              ENERGIA (- USOS DE BATERIA)
-            </option>
-
-            <option disabled>────────────</option>
-            <option value="SUSTENANCE_ADD">ALIMENTAÇÃO (+ SACIEDADE)</option>
-            <option value="SUSTENANCE_DRAIN">ALIMENTAÇÃO (- SACIEDADE)</option>
-            <option value="INSANITY_ADD">LOUCURA (+ SUCUMBIR)</option>
-            <option value="INSANITY_DRAIN">LOUCURA (- RECENTRALIZAR)</option>
-            <option value="EVILNESS_ADD">MALDADE (+ CORRUPÇÃO)</option>
-            <option value="EVILNESS_SUB">MALDADE (- REDENÇÃO)</option>
+            {INSTANT_ACTION_TARGETS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
           </select>
         </div>
 

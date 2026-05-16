@@ -69,7 +69,25 @@ export const createStatsSlice: StateCreator<
   },
 
   addCustomEffect: (effect) => {
-    set((state) => ({ customEffects: [...state.customEffects, effect] }));
+    set((state) => {
+      const updatedEffect = { ...effect };
+      const updatedFreePoints = { ...state.freePoints };
+
+      if (!updatedEffect.isAccounted) {
+        if (updatedEffect.target === "FREE_ATTR") {
+          updatedFreePoints.attributes += updatedEffect.val;
+          updatedEffect.isAccounted = true;
+        } else if (updatedEffect.target === "FREE_SKILL") {
+          updatedFreePoints.skills += updatedEffect.val;
+          updatedEffect.isAccounted = true;
+        }
+      }
+
+      return {
+        customEffects: [...state.customEffects, updatedEffect],
+        freePoints: updatedFreePoints,
+      };
+    });
   },
 
   removeCustomEffect: (id) => {

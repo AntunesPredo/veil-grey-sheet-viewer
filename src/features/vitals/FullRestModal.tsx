@@ -8,6 +8,7 @@ import { executeRawRoll } from "../../shared/utils/diceEngine";
 import { RetroToast } from "../../shared/ui/RetroToast";
 import { dispatchDiscordLog } from "../../shared/utils/discordWebhook";
 import { VG_CONFIG } from "../../shared/config/system.config";
+import { REST_DIFFICULTIES } from "../../shared/utils/selectOptions";
 
 export function FullRestModal() {
   const { isFullRestOpen, closeFullRest } = useVitalsStore();
@@ -165,9 +166,11 @@ export function FullRestModal() {
                 onChange={(e) => setDifficulty(parseInt(e.target.value))}
                 className="bg-black border border-[var(--theme-warning)]/50 text-[var(--theme-warning)] p-3 text-xs font-mono outline-none uppercase font-bold"
               >
-                <option value={10}>FÁCIL (Área Segura) - DC 10</option>
-                <option value={15}>MÉDIO (Área Selvagem) - DC 15</option>
-                <option value={20}>DIFÍCIL (Zona de Perigo) - DC 20</option>
+                {REST_DIFFICULTIES.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
             </div>
 

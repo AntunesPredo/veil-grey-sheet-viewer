@@ -36,13 +36,11 @@ export function SkillDrawer() {
   const updateProgression = useCharacterStore(
     (state) => state.updateProgression,
   );
-  const { getTargetSum } = useActiveModifiers();
+  const { getBonusSum, getSkillMod } = useActiveModifiers();
 
-  const freeSkillMod = getTargetSum("FREE_SKILL");
-  const effectiveFreePoints = freePoints.skills + freeSkillMod;
+  const effectiveFreePoints = freePoints.skills;
 
   const { initiateRoll } = useRoller();
-  const { getSkillMod } = useActiveModifiers();
   const { isOpen, isPinned, widthVW } = drawerRight;
   const drawerRef = useRef<HTMLDivElement>(null!);
   const { handleMouseDown } = useDrawerResize("right", drawerRef);
@@ -153,15 +151,15 @@ export function SkillDrawer() {
     skillData: SkillData & { rollCategory: string },
     isFiltered = false,
   ) => {
-    const baseVal = skills[skillKey as Skill] || 0;
-
+    const rawBaseVal = skills[skillKey as Skill] || 0;
     const rollCategory = skillData.rollCategory || "";
-    const modVal = getSkillMod(skillKey, rollCategory);
-    const finalVal = baseVal + modVal;
+
+    const bonusVal = getBonusSum(skillKey) + getBonusSum(rollCategory);
 
     const baseValues = skillData.bases.map(
       (b: string) => attributes[b as Attribute] || 0,
     );
+
     const minBaseValue = Math.min(...baseValues);
     const actualSkillCap = Math.min(
       currentTier.maxSkill,
@@ -169,12 +167,17 @@ export function SkillDrawer() {
       minBaseValue,
     );
 
+    const baseVal = Math.min(rawBaseVal + bonusVal, actualSkillCap);
+    const modVal = getSkillMod(skillKey, rollCategory);
+    const finalVal = baseVal + modVal;
+
     const minVal = lockedSnapshot
       ? lockedSnapshot.skills[skillKey as Skill]
       : VG_CONFIG.rules.skillMin;
-    const canReduce = sandboxMode || baseVal > minVal;
+    const canReduce = sandboxMode || rawBaseVal > minVal;
     const canIncrease =
-      sandboxMode || (effectiveFreePoints > 0 && baseVal < actualSkillCap);
+      sandboxMode ||
+      (effectiveFreePoints > 0 && rawBaseVal + bonusVal < actualSkillCap);
 
     const isDescOpen = showAllDesc || !!descToggles[skillKey];
 
@@ -194,7 +197,7 @@ export function SkillDrawer() {
       >
         <div className="flex justify-between items-center w-full">
           <div
-            className="flex flex-roow truncate pr-2 shrink min-w-0 gap-1 cursor-pointer group"
+            className="flex flex-row truncate pr-2 shrink min-w-[160px] gap-1 cursor-pointer group"
             onClick={() => toggleDesc(skillKey)}
           >
             <svg
@@ -244,7 +247,7 @@ export function SkillDrawer() {
             {canEdit ? (
               <NumberStepper
                 size="sm"
-                value={baseVal}
+                value={rawBaseVal}
                 onDecrement={() =>
                   handleSkillChange(skillKey as Skill, -1, skillData)
                 }
@@ -258,7 +261,7 @@ export function SkillDrawer() {
               <span
                 className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
               >
-                {finalVal}
+                {baseVal}
                 {modVal !== 0 && (
                   <span className="text-[9px] opacity-80">
                     [{modVal > 0 ? `+${modVal}` : modVal}]
@@ -274,7 +277,7 @@ export function SkillDrawer() {
                 onClick={() => {
                   initiateRoll(
                     skillData.label,
-                    `${VG_CONFIG.rules.mainDice}+${baseVal > 0 ? baseVal : -1}`,
+                    `${VG_CONFIG.rules.mainDice}+${baseVal > 0 ? finalVal : -1}`,
                     [skillData.id, skillData.rollCategory],
                   );
                   setSearchQuery("");

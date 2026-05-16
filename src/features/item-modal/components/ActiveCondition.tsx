@@ -1,4 +1,5 @@
 import type { ItemFormData } from "../ItemModal";
+import { ITEM_QUALITIES } from "../../../shared/utils/selectOptions";
 
 export function ActiveCondition({
   formData,
@@ -39,9 +40,11 @@ export function ActiveCondition({
               onActiveChange("quality", parseFloat(e.target.value))
             }
           >
-            <option value={8}>ALTA</option>
-            <option value={4}>MÉDIA</option>
-            <option value={2.5}>BAIXA</option>
+            {ITEM_QUALITIES.map((q) => (
+              <option key={q.value} value={q.value}>
+                {q.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>

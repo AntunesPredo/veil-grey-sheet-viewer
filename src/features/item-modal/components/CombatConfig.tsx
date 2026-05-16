@@ -6,6 +6,11 @@ import type {
 } from "../../../shared/types/veil-grey";
 import { Input } from "../../../shared/ui/Form";
 import type { ItemFormData } from "../ItemModal";
+import {
+  WEAPON_TYPES,
+  WEAPON_RANGES,
+  WEAPON_SCALINGS,
+} from "../../../shared/utils/selectOptions";
 
 export function CombatConfig({
   formData,
@@ -34,8 +39,12 @@ export function CombatConfig({
         onChange={(e) => handleCombatProp("weaponType", e.target.value)}
         className="bg-black border border-[var(--theme-danger)]/50 text-[var(--theme-danger)] p-2 text-xs font-mono outline-none w-full uppercase font-bold"
       >
-        <option value="MELEE">ARMA CORPO-A-CORPO (MELEE)</option>
-        <option value="RANGED">ARMA À DISTÂNCIA (RANGED)</option>
+        {WEAPON_TYPES.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+        <option value="NONE">-- NENHUM --</option>
       </select>
 
       <div className="grid grid-cols-2 gap-3 mt-2">
@@ -63,11 +72,11 @@ export function CombatConfig({
             }
             className="w-full bg-black border border-[var(--theme-danger)]/50 text-[var(--theme-danger)] p-2.5 text-xs font-mono outline-none"
           >
-            <option value="CURTÍSSIMO">CURTÍSSIMO</option>
-            <option value="CURTO">CURTO</option>
-            <option value="MÉDIO">MÉDIO</option>
-            <option value="LONGO">LONGO</option>
-            <option value="EXTREMO">EXTREMO</option>
+            {WEAPON_RANGES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -129,12 +138,11 @@ export function CombatConfig({
                 }
                 className="w-full bg-black border border-[var(--theme-danger)]/50 text-[var(--theme-danger)] p-2.5 text-xs font-mono outline-none"
               >
-                <option value="NONE">NENHUMA</option>
-                <option value="S">S</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
+                {WEAPON_SCALINGS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
               </select>
             </div>
           </>

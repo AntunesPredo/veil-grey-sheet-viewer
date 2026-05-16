@@ -24,12 +24,11 @@ export function AttributeDrawer() {
   const updateProgression = useCharacterStore(
     (state) => state.updateProgression,
   );
-  const { getTargetSum } = useActiveModifiers();
+  const { getTargetSum, getAttrMod, getBonusSum } = useActiveModifiers();
 
   const freeAttrMod = getTargetSum("FREE_ATTR");
   const effectiveFreePoints = freePoints.attributes + freeAttrMod;
 
-  const { getAttrMod } = useActiveModifiers();
   const { secondaryAttributes } = useCharacterStats();
   const { initiateRoll } = useRoller();
   const { isOpen, isPinned, widthVW } = drawerLeft;
@@ -151,19 +150,26 @@ export function AttributeDrawer() {
               title={group.label}
             >
               {Object.entries(group.atributes).map(([attrKey, attr]) => {
-                const baseVal = attributes[attrKey as Attribute] || 0;
+                const rawBaseVal = attributes[attrKey as Attribute] || 0;
+                const bonusVal =
+                  getBonusSum(attrKey) + getBonusSum(group.rollCategory);
+
+                const actualCap = Math.min(
+                  currentTier.maxAttr,
+                  VG_CONFIG.rules.attrMax,
+                );
+                const baseVal = Math.min(rawBaseVal + bonusVal, actualCap);
                 const modVal = getAttrMod(attrKey, group.rollCategory);
                 const finalVal = baseVal + modVal;
 
                 const minVal = lockedSnapshot
                   ? lockedSnapshot.attributes[attrKey as Attribute]
                   : VG_CONFIG.rules.attrMin;
-                const canReduce = sandboxMode || baseVal > minVal;
+                const canReduce = sandboxMode || rawBaseVal > minVal;
                 const canIncrease =
                   sandboxMode ||
                   (effectiveFreePoints > 0 &&
-                    baseVal < currentTier.maxAttr &&
-                    baseVal < VG_CONFIG.rules.attrMax);
+                    rawBaseVal + bonusVal < actualCap);
 
                 let valueBoxColor =
                   "text-[var(--theme-text)] bg-[var(--theme-accent)]/20 border-[var(--theme-accent)]";
@@ -177,17 +183,17 @@ export function AttributeDrawer() {
                 return (
                   <div
                     key={attrKey}
-                    className="flex flex-col sm:flex-row justify-between items-center bg-[var(--theme-background)]/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
+                    className="flex flex-col md:flex-row flex-wrap justify-between items-center bg-[var(--theme-background)]/50 p-1 border border-[var(--theme-accent)]/30 hover:border-[var(--theme-accent)]/50 transition-colors"
                   >
-                    <span className="text-[12px] uppercase font-bold">
+                    <span className="text-[12px] uppercase truncate font-bold">
                       {attr.label}
                     </span>
 
-                    <div className="flex gap-2 items-center shrink-0">
+                    <div className="flex flex-1 justify-end min-w-[160px] items-center gap-2 items-center shrink-0">
                       {canEdit ? (
                         <NumberStepper
                           size="sm"
-                          value={baseVal}
+                          value={rawBaseVal}
                           onDecrement={() =>
                             handleAttributeChange(attrKey as Attribute, -1)
                           }
@@ -201,11 +207,15 @@ export function AttributeDrawer() {
                         <span
                           className={`font-mono px-2 py-1 border text-xs min-w-[32px] text-center flex items-center justify-center gap-1 ${valueBoxColor}`}
                         >
-                          {finalVal}
+                          {baseVal}
                           {modVal !== 0 && (
-                            <span className="text-[10px] opacity-80">
-                              [{modVal > 0 ? `+${modVal}` : modVal}]
-                            </span>
+                            <>
+                              {" "}
+                              | {finalVal}
+                              <span className="text-[10px] opacity-80">
+                                [{modVal > 0 ? `+${modVal}` : modVal}]
+                              </span>
+                            </>
                           )}
                         </span>
                       )}
@@ -217,7 +227,7 @@ export function AttributeDrawer() {
                           onClick={() =>
                             initiateRoll(
                               attr.label,
-                              `${VG_CONFIG.rules.mainDice}+${baseVal}`,
+                              `${VG_CONFIG.rules.mainDice}+${finalVal}`,
                               [attrKey, group.rollCategory],
                             )
                           }
