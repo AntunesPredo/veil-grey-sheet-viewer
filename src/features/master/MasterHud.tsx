@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useSystemStore } from "../../shared/store/useSystemStore";
 import { Button } from "../../shared/ui/Form";
 import { HashGeneratorModal } from "../progression/HashGeneratorModal";
-import { PlayerTrackerTab } from "./components/PlayerTrackerTab";
-import { MasterArsenalTab } from "./components/MasterArsenalTab";
+import { PlayerTrackerTab } from "./PlayerTrackerTab";
+import { MasterArsenalTab } from "./MasterArsenalTab";
 
 export function MasterHud() {
   const [activeTab, setActiveTab] = useState<"TRACKER" | "ARSENAL">("TRACKER");
@@ -18,7 +18,7 @@ export function MasterHud() {
             SYS.OVERSEER
           </span>
           <span className="text-[10px] text-[var(--theme-text)]/70 uppercase tracking-widest">
-            ACESSO OMEGA CONCEDIDO.
+            ACESSO CONCEDIDO.
           </span>
         </div>
 

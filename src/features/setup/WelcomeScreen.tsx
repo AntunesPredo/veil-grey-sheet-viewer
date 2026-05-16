@@ -143,7 +143,7 @@ export function WelcomeScreen() {
 
   const handleSandbox = () => {
     updateProgression({
-      name: localName || "NO-NAME",
+      name: localName || "SANDBOX",
       sandboxMode: true,
       creationStatus: "CLOSED",
     });
